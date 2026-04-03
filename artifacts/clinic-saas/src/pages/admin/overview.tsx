@@ -5,7 +5,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 
 export default function AdminOverview() {
   const { data: stats, isLoading: loadingStats } = useGetAdminStats();
-  const { data: revenueData, isLoading: loadingRev } = useGetRevenueChart({ query: { queryKey: ["admin", "revenueChart"] } });
+  const { data: revenueData, isLoading: loadingRev } = useGetRevenueChart(undefined, { query: { queryKey: ["admin", "revenueChart"] as const } });
   const { data: subHealth, isLoading: loadingHealth } = useGetSubscriptionHealth();
 
   if (loadingStats || loadingRev || loadingHealth) {

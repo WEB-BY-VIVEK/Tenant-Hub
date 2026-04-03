@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { CheckCircle, Activity, Calendar, Clock, MapPin, Ticket } from "lucide-react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { CheckCircle, Activity, Calendar, Clock, MapPin, Ticket, QrCode } from "lucide-react";
 import type { BookingConfirmation } from "@workspace/api-client-react";
 import { format } from "date-fns";
+import { QRCodeSVG } from "qrcode.react";
 
 export default function BookSuccess() {
   const [, setLocation] = useLocation();
@@ -15,8 +16,7 @@ export default function BookSuccess() {
     if (data) {
       try {
         setBookingData(JSON.parse(data));
-      } catch (e) {
-        console.error("Failed to parse booking data");
+      } catch {
         setLocation("/book");
       }
     } else {
@@ -25,6 +25,13 @@ export default function BookSuccess() {
   }, [setLocation]);
 
   if (!bookingData) return null;
+
+  const qrValue = JSON.stringify({
+    apptId: bookingData.appointment.id,
+    token: bookingData.token.tokenNumber,
+    name: bookingData.appointment.patientName,
+    date: bookingData.appointment.appointmentDate,
+  });
 
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col items-center py-12 px-4">
@@ -47,17 +54,15 @@ export default function BookSuccess() {
               <rect width="100" height="100" fill="url(#grid)" />
             </svg>
           </div>
-          
           <div className="bg-white/20 p-3 rounded-full inline-flex mb-4 relative z-10">
             <CheckCircle className="h-10 w-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold mb-2 relative z-10">Booking Confirmed!</h1>
-          <p className="text-primary-foreground/80 relative z-10">
-            {bookingData.message}
-          </p>
+          <p className="text-primary-foreground/80 relative z-10">{bookingData.message}</p>
         </div>
 
         <CardContent className="-mt-8 px-6 relative z-20">
+          {/* Token Number */}
           <Card className="shadow-md border-border mb-6">
             <CardContent className="p-6 flex flex-col items-center text-center">
               <div className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-1">
@@ -74,16 +79,37 @@ export default function BookSuccess() {
             </CardContent>
           </Card>
 
-          <div className="space-y-4 mt-8 px-2">
+          {/* QR Code for Clinic Entry */}
+          <Card className="shadow-sm border-dashed border-border mb-6">
+            <CardContent className="p-6 flex flex-col items-center text-center">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-widest mb-4">
+                <QrCode className="h-4 w-4" />
+                <span>Scan at Reception</span>
+              </div>
+              <div className="bg-white p-3 rounded-lg border shadow-sm inline-block" data-testid="booking-qr-code">
+                <QRCodeSVG
+                  value={qrValue}
+                  size={160}
+                  level="M"
+                  includeMargin={false}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Staff can scan this QR code to instantly verify your appointment
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Appointment Details */}
+          <div className="space-y-4 mt-4 px-2">
             <h3 className="font-semibold text-lg border-b pb-2">Appointment Details</h3>
-            
-            <div className="grid grid-cols-[30px_1fr] gap-3">
+            <div className="grid grid-cols-[30px_1fr] gap-3 items-start">
               <UserIcon className="text-muted-foreground mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Patient Name</p>
                 <p className="font-medium">{bookingData.appointment.patientName}</p>
               </div>
-              
+
               <Calendar className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Date</p>
@@ -91,26 +117,26 @@ export default function BookSuccess() {
                   {format(new Date(bookingData.appointment.appointmentDate), "EEEE, MMMM do, yyyy")}
                 </p>
               </div>
-              
+
               <Clock className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Time Slot</p>
                 <p className="font-medium">{bookingData.appointment.timeSlot}</p>
               </div>
-              
+
               <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Location</p>
-                <p className="font-medium">Clinic ID: {bookingData.appointment.clinicId}</p>
+                <p className="font-medium">Clinic #{bookingData.appointment.clinicId}</p>
               </div>
             </div>
           </div>
         </CardContent>
 
-        <CardFooter className="flex flex-col gap-3 px-6 pb-8 bg-muted/20">
-          <Button 
-            className="w-full" 
-            size="lg" 
+        <CardFooter className="flex flex-col gap-3 px-6 pb-8 bg-muted/20 mt-4">
+          <Button
+            className="w-full"
+            size="lg"
             onClick={() => window.print()}
             data-testid="btn-print-token"
           >

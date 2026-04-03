@@ -1,12 +1,47 @@
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Calendar, BarChart3, CreditCard, Settings, Users, Activity, LogOut } from "lucide-react";
+import { LayoutDashboard, Calendar, BarChart3, CreditCard, Settings, Users, Activity, LogOut, AlertTriangle } from "lucide-react";
+import { useGetCurrentSubscription } from "@workspace/api-client-react";
+import { Button } from "@/components/ui/button";
+
+function SubscriptionExpiredOverlay() {
+  return (
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+      <div className="max-w-sm mx-auto text-center px-6 py-10 border rounded-xl shadow-xl bg-card">
+        <div className="flex items-center justify-center h-16 w-16 rounded-full bg-destructive/10 mx-auto mb-6">
+          <AlertTriangle className="h-8 w-8 text-destructive" />
+        </div>
+        <h2 className="text-xl font-bold mb-2">Subscription Expired</h2>
+        <p className="text-muted-foreground text-sm mb-6">
+          Your clinic subscription has expired. Recharge now to continue accessing your dashboard and patient features.
+        </p>
+        <Link href="/recharge">
+          <Button className="w-full" size="lg" data-testid="overlay-btn-recharge">
+            <CreditCard className="h-4 w-4 mr-2" /> Recharge Now
+          </Button>
+        </Link>
+        <p className="text-xs text-muted-foreground mt-4">
+          Need help? Contact support at support@clinicdigitalgrowth.in
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [location] = useLocation();
+  const isDoctor = user?.role === "doctor";
 
+  const { data: subscriptionStatus } = useGetCurrentSubscription({
+    query: {
+      queryKey: ["subscription", "current"],
+      enabled: isDoctor,
+    },
+  });
+
+  const isExpired = isDoctor && subscriptionStatus && !subscriptionStatus.isActive;
   const isLinkActive = (href: string) => location === href;
 
   const doctorLinks = [
@@ -56,17 +91,31 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
+
+            {isDoctor && subscriptionStatus?.daysRemaining !== null && subscriptionStatus?.daysRemaining !== undefined && subscriptionStatus.daysRemaining <= 7 && subscriptionStatus.isActive && (
+              <div className="mx-3 mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                <p className="font-semibold mb-1">⚠️ Subscription expiring soon</p>
+                <p>{subscriptionStatus.daysRemaining} day{subscriptionStatus.daysRemaining !== 1 ? "s" : ""} remaining</p>
+                <Link href="/recharge">
+                  <button className="mt-2 text-amber-900 underline font-medium" data-testid="sidebar-btn-recharge">
+                    Recharge now →
+                  </button>
+                </Link>
+              </div>
+            )}
           </SidebarContent>
         </Sidebar>
-        <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
+
+        <main className="flex-1 flex flex-col min-h-screen overflow-hidden relative">
           <header className="h-14 border-b flex items-center px-4 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
             <SidebarTrigger />
             <div className="ml-auto flex items-center space-x-4">
               <span className="text-sm font-medium">{user?.name}</span>
             </div>
           </header>
-          <div className="flex-1 p-6 overflow-y-auto">
+          <div className="flex-1 p-6 overflow-y-auto relative">
             {children}
+            {isExpired && location !== "/recharge" && <SubscriptionExpiredOverlay />}
           </div>
         </main>
       </div>

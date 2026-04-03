@@ -35,7 +35,7 @@ export default function ClinicsList() {
           toast({
             variant: "destructive",
             title: "Action failed",
-            description: err.data?.error || "Could not update clinic status",
+            description: (err.data as { error?: string })?.error || "Could not update clinic status",
           });
         }
       }

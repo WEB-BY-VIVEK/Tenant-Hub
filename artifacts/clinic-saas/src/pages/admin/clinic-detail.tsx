@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { useGetClinic, useListDoctors, useUpgradeSubscription, SubscriptionPlan, UpgradeSubscriptionBodyPlan } from "@workspace/api-client-react";
+import { useGetClinic, getGetClinicQueryKey, useListDoctors, getListDoctorsQueryKey, useUpgradeSubscription, SubscriptionPlan, UpgradeSubscriptionBodyPlan } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,8 @@ export default function ClinicDetail() {
   const [selectedPlan, setSelectedPlan] = useState<UpgradeSubscriptionBodyPlan | "">("");
   const { toast } = useToast();
 
-  const { data: clinic, isLoading: loadingClinic, refetch: refetchClinic } = useGetClinic(id, { query: { enabled: !!id } });
-  // Note: For a real app we'd pass clinicId to the list doctors hook, 
-  // but since it's an admin view, we'll assume the API filters by the active user's clinic or has an admin param.
-  const { data: doctors, isLoading: loadingDoctors } = useListDoctors({ query: { enabled: !!id } });
+  const { data: clinic, isLoading: loadingClinic, refetch: refetchClinic } = useGetClinic(id, { query: { queryKey: getGetClinicQueryKey(id), enabled: !!id } });
+  const { data: doctors, isLoading: loadingDoctors } = useListDoctors(id, { query: { queryKey: getListDoctorsQueryKey(id), enabled: !!id } });
   
   const upgradeMutation = useUpgradeSubscription();
 
@@ -46,7 +44,7 @@ export default function ClinicDetail() {
           toast({
             variant: "destructive",
             title: "Upgrade failed",
-            description: err.data?.error || "Could not update subscription plan.",
+            description: (err.data as { error?: string })?.error || "Could not update subscription plan.",
           });
         }
       }

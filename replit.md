@@ -67,9 +67,9 @@ The frontend uses Wouter v3 with the `nest` prop for sub-sections:
 
 | Path | Component | Auth |
 |---|---|---|
-| `/` | Landing page (pricing, FAQ, testimonials) | Public |
+| `/` | Landing page (pricing, FAQ, testimonials, contact form, Google Maps) | Public |
 | `/book` | 3-step patient booking form | Public |
-| `/book/success` | Booking confirmation + token number | Public |
+| `/book/success` | Booking confirmation + token number + QR code for entry scan | Public |
 | `/login` | Doctor/Admin login | Public |
 | `/register` | Clinic registration | Public |
 | `/dashboard` | Doctor overview (token queue, stats) | doctor |
@@ -128,3 +128,17 @@ bookMutation.mutate({ data: { clinicId: 1, patientName: "..." } });
 | Digital Growth | ₹18,999 | One-time (featured) |
 
 SaaS subscriptions (monthly ₹999, quarterly ₹2,499, yearly ₹9,999) are managed via the Recharge dashboard page.
+
+## Subscription Expiry Overlay
+
+When a doctor's subscription is inactive (`isActive: false` from `GET /api/subscriptions/current`), a full-page overlay is shown in the dashboard locking all pages except `/recharge`. It prompts the doctor to recharge. A yellow warning banner also appears in the sidebar when `daysRemaining <= 7`.
+
+## QR Code Booking Entry
+
+On the booking success page, a QR code (rendered via `qrcode.react`) encodes appointment ID, token number, patient name, and date. Clinic staff can scan this code at entry to instantly verify the appointment.
+
+## Landing Page Extras
+
+- Scroll animations via `IntersectionObserver` (CSS `reveal`/`animate-in` classes)
+- Contact form (client-side only, shows success toast on submit)
+- Google Maps embed (iframe) showing Mumbai office location

@@ -1,12 +1,61 @@
+import { useRef, useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { CheckCircle2, Star, MessageCircle, ArrowRight, Activity, Shield, Clock, CalendarDays } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { CheckCircle2, Star, MessageCircle, ArrowRight, Activity, Shield, Clock, CalendarDays, Mail, Phone, MapPin, Send } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add("animate-in");
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return ref;
+}
 
 export default function Landing() {
+  const { toast } = useToast();
+  const [contactForm, setContactForm] = useState({ name: "", phone: "", email: "", message: "" });
+  const [sending, setSending] = useState(false);
+
+  const featuresRef = useScrollReveal();
+  const pricingRef = useScrollReveal();
+  const testimonialsRef = useScrollReveal();
+  const contactRef = useScrollReveal();
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSending(true);
+    setTimeout(() => {
+      setSending(false);
+      setContactForm({ name: "", phone: "", email: "", message: "" });
+      toast({ title: "Message sent!", description: "We'll get back to you within 24 hours." });
+    }, 1000);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <style>{`
+        .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .reveal.animate-in { opacity: 1; transform: translateY(0); }
+      `}</style>
+
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -32,7 +81,10 @@ export default function Landing() {
         {/* Hero Section */}
         <section className="py-24 lg:py-32 bg-gradient-to-b from-primary/5 to-background">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground max-w-4xl mx-auto mb-6">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-8 border border-primary/20">
+              <Activity className="h-4 w-4" /> Trusted by 500+ Indian Clinics
+            </div>
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground max-w-4xl mx-auto mb-6 leading-tight">
               Modernize Your Clinic.<br/>
               <span className="text-primary">Streamline Patient Care.</span>
             </h1>
@@ -51,12 +103,24 @@ export default function Landing() {
                 </Button>
               </Link>
             </div>
+            <div className="mt-16 grid grid-cols-3 gap-8 max-w-xl mx-auto text-center">
+              {[
+                { stat: "500+", label: "Clinics onboarded" },
+                { stat: "2L+", label: "Tokens issued" },
+                { stat: "40%", label: "Less wait time" },
+              ].map((s, i) => (
+                <div key={i}>
+                  <div className="text-3xl font-extrabold text-primary">{s.stat}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Services / Features */}
         <section className="py-20 bg-background">
-          <div className="container mx-auto px-4">
+          <div ref={featuresRef} className="reveal container mx-auto px-4">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">Everything your clinic needs</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">Purpose-built tools to reduce wait times and improve the patient experience.</p>
@@ -67,7 +131,7 @@ export default function Landing() {
                 { title: "Digital Booking", desc: "Allow patients to book appointments online 24/7 without calling the reception.", icon: CalendarDays },
                 { title: "Secure Records", desc: "Bank-grade security for your clinic data and patient information.", icon: Shield }
               ].map((feature, i) => (
-                <Card key={i} className="border-none shadow-md bg-card/50">
+                <Card key={i} className="border-none shadow-md bg-card/50 hover:shadow-lg transition-shadow duration-300">
                   <CardHeader>
                     <feature.icon className="h-10 w-10 text-primary mb-4" />
                     <CardTitle>{feature.title}</CardTitle>
@@ -83,7 +147,7 @@ export default function Landing() {
 
         {/* Pricing */}
         <section className="py-20 bg-muted/50">
-          <div className="container mx-auto px-4">
+          <div ref={pricingRef} className="reveal container mx-auto px-4">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold mb-4">Website & Setup Packages</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">One-time setup fees for your digital presence. (SaaS subscription billed separately).</p>
@@ -122,7 +186,7 @@ export default function Landing() {
 
         {/* Testimonials */}
         <section className="py-20 bg-background">
-          <div className="container mx-auto px-4">
+          <div ref={testimonialsRef} className="reveal container mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-16">Trusted by Indian Doctors</h2>
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {[
@@ -154,7 +218,8 @@ export default function Landing() {
               {[
                 { q: "Is the platform secure?", a: "Yes, we use industry-standard encryption to protect all clinic and patient data." },
                 { q: "Can I use my own domain?", a: "Yes, our Standalone Website and Digital Growth packages include custom domain mapping." },
-                { q: "How does the token system work?", a: "Patients receive a token number upon booking. You can advance the queue from your dashboard, and patients can check their live status." }
+                { q: "How does the token system work?", a: "Patients receive a token number upon booking. You can advance the queue from your dashboard, and patients can check their live status." },
+                { q: "Is there a contract or lock-in period?", a: "No lock-in. Our monthly subscription can be cancelled anytime. One-time setup fees are non-refundable." }
               ].map((faq, i) => (
                 <AccordionItem key={i} value={`item-${i}`}>
                   <AccordionTrigger className="text-left font-medium">{faq.q}</AccordionTrigger>
@@ -162,6 +227,111 @@ export default function Landing() {
                 </AccordionItem>
               ))}
             </Accordion>
+          </div>
+        </section>
+
+        {/* Contact & Maps */}
+        <section className="py-20 bg-background">
+          <div ref={contactRef} className="reveal container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl font-bold mb-4">Get in Touch</h2>
+              <p className="text-muted-foreground max-w-xl mx-auto">Have questions? Our team is ready to help you get started.</p>
+            </div>
+            <div className="grid lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
+              {/* Contact Form */}
+              <div>
+                <form onSubmit={handleContactSubmit} className="space-y-4" data-testid="contact-form">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="contact-name">Your Name</Label>
+                      <Input
+                        id="contact-name"
+                        placeholder="Dr. Ramesh"
+                        value={contactForm.name}
+                        onChange={(e) => setContactForm(f => ({ ...f, name: e.target.value }))}
+                        required
+                        data-testid="contact-name"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="contact-phone">Phone Number</Label>
+                      <Input
+                        id="contact-phone"
+                        placeholder="+91 98765 43210"
+                        value={contactForm.phone}
+                        onChange={(e) => setContactForm(f => ({ ...f, phone: e.target.value }))}
+                        required
+                        data-testid="contact-phone"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="contact-email">Email Address</Label>
+                    <Input
+                      id="contact-email"
+                      type="email"
+                      placeholder="doctor@yourclinic.in"
+                      value={contactForm.email}
+                      onChange={(e) => setContactForm(f => ({ ...f, email: e.target.value }))}
+                      required
+                      data-testid="contact-email"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="contact-message">Message</Label>
+                    <Textarea
+                      id="contact-message"
+                      placeholder="Tell us about your clinic and what you're looking for..."
+                      rows={4}
+                      className="resize-none"
+                      value={contactForm.message}
+                      onChange={(e) => setContactForm(f => ({ ...f, message: e.target.value }))}
+                      required
+                      data-testid="contact-message"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={sending} data-testid="btn-contact-submit">
+                    {sending ? "Sending..." : <><Send className="h-4 w-4 mr-2" /> Send Message</>}
+                  </Button>
+                </form>
+
+                <div className="mt-8 space-y-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Phone className="h-4 w-4 text-primary" />
+                    </div>
+                    <span>+91 98765 43210 (Mon–Sat, 9 AM – 7 PM)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Mail className="h-4 w-4 text-primary" />
+                    </div>
+                    <span>support@clinicdigitalgrowth.in</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="h-4 w-4 text-primary" />
+                    </div>
+                    <span>Andheri West, Mumbai, Maharashtra 400058</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Google Maps Embed */}
+              <div className="rounded-xl overflow-hidden border shadow-md h-[400px] lg:h-auto">
+                <iframe
+                  title="Clinic Digital Growth Office Location"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3769.521996024487!2d72.83283177473823!3d19.13368938210516!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7b7b2a9b0e02d%3A0x4a56d6c2f7c91234!2sAndheri+West%2C+Mumbai%2C+Maharashtra!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  data-testid="google-maps-embed"
+                />
+              </div>
+            </div>
           </div>
         </section>
       </main>
