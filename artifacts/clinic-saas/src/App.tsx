@@ -10,6 +10,8 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/public/landing";
 import Book from "@/pages/public/book";
 import BookSuccess from "@/pages/public/book-success";
+import TermsAndConditions from "@/pages/public/terms";
+import RefundPolicy from "@/pages/public/refund-policy";
 import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
 
@@ -41,6 +43,8 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/book" component={Book} />
       <Route path="/book/success" component={BookSuccess} />
+      <Route path="/terms-and-conditions" component={TermsAndConditions} />
+      <Route path="/refund-policy" component={RefundPolicy} />
       
       {/* Auth Routes */}
       <Route path="/login" component={Login} />

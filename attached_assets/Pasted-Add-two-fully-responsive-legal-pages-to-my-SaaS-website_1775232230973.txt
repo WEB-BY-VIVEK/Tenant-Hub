@@ -1,0 +1,187 @@
+Add two fully responsive legal pages to my SaaS website:
+
+
+
+Terms and Conditions page
+
+Refund and Cancellation Policy page
+
+Use React.js + Tailwind CSS.
+
+Requirements:
+
+
+
+create separate routes:
+
+/terms-and-conditions
+
+/refund-policy
+
+use clean professional healthcare SaaS design
+
+white background
+
+blue heading accents
+
+responsive layout
+
+premium typography
+
+proper spacing and section cards
+
+sticky header with page title
+
+footer links on all pages
+
+Add footer links site-wide:
+
+
+
+Terms & Conditions
+
+Refund Policy
+
+Privacy Policy
+
+Contact Us
+
+Use the following exact content inside the pages:
+
+[Terms and Conditions
+
+Effective Date: [Insert Date]
+
+Welcome to Vivek Digital Clinic Solutions.
+
+By accessing or using our website, dashboard, QR booking system, and related SaaS services, you agree to be bound by these Terms and Conditions.
+
+
+
+1. Services
+
+We provide digital solutions for clinics, doctors, dentists, and hospitals, including but not limited to:
+
+
+
+clinic website development
+
+QR-based appointment booking
+
+token management system
+
+doctor dashboard
+
+admin dashboard
+
+subscription and recharge services
+
+2. Payment Terms
+
+All payments made through Razorpay are processed securely.
+
+The applicable package charges and monthly maintenance fees are clearly displayed before purchase.
+
+Subscription-based services are billed according to the selected plan.
+
+
+
+3. Subscription Validity
+
+For QR-based plans, monthly maintenance starts from the 2nd month.
+
+Failure to renew the subscription may result in temporary suspension of dashboard and booking services until recharge is completed.
+
+
+
+4. Service Activation
+
+Services will be activated after successful payment confirmation.
+
+Initial setup may require 1–7 business days depending on package complexity.
+
+
+
+5. Client Responsibilities
+
+The client is responsible for providing accurate clinic information, doctor details, contact information, and branding content.
+
+
+
+6. Changes to Pricing
+
+We reserve the right to update pricing, features, and plans with prior notice.
+
+
+
+7. Limitation of Liability
+
+We are not liable for losses caused by third-party service outages, payment gateway downtime, hosting interruptions, or force majeure events.
+
+
+
+8. Governing Law
+
+These terms shall be governed by the laws of India.]
+
+Refund and Cancellation Policy
+
+Effective Date: [Insert Date]
+
+At Vivek Digital Clinic Solutions, we strive to provide high-quality digital services.
+
+
+
+1. Initial Setup Charges
+
+Initial setup charges are non-refundable once the project work has started, including:
+
+
+
+website design
+
+dashboard creation
+
+QR code setup
+
+domain / hosting configuration
+
+2. Monthly Maintenance Charges
+
+Monthly maintenance and recharge payments are non-refundable once the billing cycle has started.
+
+
+
+3. Duplicate Payments
+
+In case of accidental duplicate payment, the extra amount will be refunded within 5–7 business days to the original payment method.
+
+
+
+4. Service Failure Refund
+
+If the purchased service is not activated within the committed timeline due to our internal issue, the client may request a refund.
+
+
+
+5. Cancellation
+
+Clients may cancel future monthly renewals by informing us before the next billing cycle.
+
+
+
+6. Refund Processing Time
+
+Approved refunds will be processed through Razorpay and may take 5–7 business days to reflect in the customer’s bank account / UPI.]
+
+Also make sure the footer is visible on:
+
+
+
+landing page
+
+doctor dashboard login page
+
+pricing page
+
+The links must be clickable and route correctly.

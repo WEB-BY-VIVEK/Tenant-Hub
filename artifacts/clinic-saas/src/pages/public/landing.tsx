@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, Star, MessageCircle, ArrowRight, Activity, Shield, Clock, CalendarDays, Mail, Phone, MapPin, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { SiteFooter } from "@/components/site-footer";
 
 function useScrollReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -336,16 +337,7 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="bg-card py-12 border-t">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <div className="flex items-center justify-center gap-2 mb-4 text-foreground font-bold">
-            <Activity className="h-5 w-5 text-primary" />
-            <span>Clinic Digital Growth</span>
-          </div>
-          <p className="text-sm mb-4">Empowering healthcare providers with modern digital tools.</p>
-          <p className="text-xs">&copy; {new Date().getFullYear()} Clinic Digital Growth. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
 
       {/* Floating WhatsApp Button */}
       <a 
