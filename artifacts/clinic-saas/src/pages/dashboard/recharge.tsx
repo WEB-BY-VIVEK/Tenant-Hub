@@ -43,10 +43,11 @@ export default function Recharge() {
         },
         onError: (err) => {
           setIsProcessing(false);
-          if ((err as any)?.status === 503) {
+          const errData = err.data as { error?: string } | null;
+          if (err.status === 503) {
             setPaymentError("Payment gateway is not currently configured. Please contact support or try again later.");
           } else {
-            setPaymentError(err.data?.error || "Could not process payment order at this time.");
+            setPaymentError(errData?.error || "Could not process payment order at this time.");
           }
         }
       }

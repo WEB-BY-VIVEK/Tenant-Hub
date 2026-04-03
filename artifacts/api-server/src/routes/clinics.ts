@@ -5,7 +5,17 @@ import { requireAuth, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/clinics", async (req, res): Promise<void> => {
+router.get("/clinics/public", async (req, res): Promise<void> => {
+  const clinics = await db.select({
+    id: clinicsTable.id,
+    name: clinicsTable.name,
+    city: clinicsTable.city,
+    address: clinicsTable.address,
+  }).from(clinicsTable).where(eq(clinicsTable.isSuspended, false)).orderBy(clinicsTable.createdAt);
+  res.json(clinics);
+});
+
+router.get("/clinics", requireAuth, requireRole("super_admin"), async (req, res): Promise<void> => {
   const clinics = await db.select().from(clinicsTable).orderBy(clinicsTable.createdAt);
   res.json(clinics);
 });
