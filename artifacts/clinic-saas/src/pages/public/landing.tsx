@@ -6,12 +6,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, Star, ArrowRight, Activity, Shield, Clock, CalendarDays, Mail, Phone, MapPin, Send } from "lucide-react";
+import { CheckCircle2, Star, MessageCircle, ArrowRight, Activity, Shield, Clock, CalendarDays, Mail, Phone, MapPin, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SiteFooter } from "@/components/site-footer";
-import { customFetch } from "@workspace/api-client-react";
-
-const WHATSAPP_NUMBER = "919876543210";
 
 function useScrollReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -43,21 +40,14 @@ export default function Landing() {
   const testimonialsRef = useScrollReveal();
   const contactRef = useScrollReveal();
 
-  const handleContactSubmit = async (e: React.FormEvent) => {
+  const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
-    try {
-      await customFetch("/api/inquiries", {
-        method: "POST",
-        body: JSON.stringify(contactForm),
-      });
+    setTimeout(() => {
+      setSending(false);
       setContactForm({ name: "", phone: "", email: "", message: "" });
       toast({ title: "Message sent!", description: "We'll get back to you within 24 hours." });
-    } catch {
-      toast({ variant: "destructive", title: "Failed to send", description: "Please try again or call us directly." });
-    } finally {
-      setSending(false);
-    }
+    }, 1000);
   };
 
   return (
@@ -350,17 +340,14 @@ export default function Landing() {
       <SiteFooter />
 
       {/* Floating WhatsApp Button */}
-      <a
-        href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hi%2C%20I%20am%20interested%20in%20Clinic%20Digital%20Growth%20for%20my%20clinic.`}
-        target="_blank"
+      <a 
+        href="https://wa.me/919876543210" 
+        target="_blank" 
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 h-14 w-14 bg-[#25D366] hover:bg-[#1ebe5a] text-white rounded-full flex items-center justify-center shadow-xl transition-all hover:scale-110 z-50"
+        className="fixed bottom-6 right-6 h-14 w-14 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 z-50"
         data-testid="btn-whatsapp"
-        aria-label="Chat on WhatsApp"
       >
-        <svg viewBox="0 0 32 32" className="h-8 w-8 fill-white" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16.004 2.667C8.64 2.667 2.667 8.64 2.667 16c0 2.347.64 4.64 1.853 6.64L2.667 29.333l6.907-1.813A13.267 13.267 0 0 0 16.004 29.333C23.36 29.333 29.333 23.36 29.333 16c0-7.36-5.973-13.333-13.329-13.333zm0 24c-2.16 0-4.267-.587-6.107-1.693l-.44-.267-4.107 1.08 1.093-4-.28-.453A10.64 10.64 0 0 1 4.667 16c0-5.893 4.787-10.667 10.667-10.667 5.88 0 10.666 4.774 10.666 10.667 0 5.893-4.786 10.667-10.666 10.667zm5.84-7.987c-.32-.16-1.893-.933-2.187-1.04-.293-.107-.507-.16-.72.16-.213.32-.827 1.04-1.013 1.253-.187.213-.373.24-.693.08-.32-.16-1.347-.493-2.56-1.573-.947-.84-1.587-1.88-1.773-2.2-.187-.32-.02-.493.14-.653.144-.144.32-.373.48-.56.16-.187.213-.32.32-.533.107-.213.053-.4-.027-.56-.08-.16-.72-1.733-.987-2.373-.253-.613-.52-.533-.72-.547-.187-.013-.4-.013-.613-.013a1.2 1.2 0 0 0-.867.4c-.293.32-1.12 1.093-1.12 2.667s1.147 3.093 1.307 3.307c.16.213 2.267 3.453 5.493 4.84.773.333 1.373.533 1.84.68.773.24 1.48.2 2.04.12.627-.093 1.893-.773 2.16-1.52.267-.747.267-1.387.187-1.52-.08-.133-.293-.213-.613-.373z"/>
-        </svg>
+        <MessageCircle className="h-6 w-6" />
       </a>
     </div>
   );
