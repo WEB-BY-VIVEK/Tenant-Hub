@@ -88,6 +88,19 @@ export const GetMeResponse = zod.object({
 });
 
 /**
+ * @summary List active clinics (public, minimal fields for patient booking)
+ */
+export const ListPublicClinicsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  city: zod.string().nullish(),
+  address: zod.string().nullish(),
+});
+export const ListPublicClinicsResponse = zod.array(
+  ListPublicClinicsResponseItem,
+);
+
+/**
  * @summary List all clinics (admin only)
  */
 export const ListClinicsResponseItem = zod.object({
@@ -129,7 +142,7 @@ export const CreateClinicBody = zod.object({
 });
 
 /**
- * @summary Get a clinic by ID
+ * @summary Get a clinic by ID (includes subscription status)
  */
 export const GetClinicParams = zod.object({
   clinicId: zod.coerce.number(),
@@ -142,17 +155,37 @@ export const GetClinicResponse = zod.object({
   ownerName: zod.string(),
   phone: zod.string(),
   email: zod.string(),
-  address: zod.string().nullish(),
   city: zod.string().nullish(),
+  address: zod.string().nullish(),
   state: zod.string().nullish(),
   pincode: zod.string().nullish(),
-  logoUrl: zod.string().nullish(),
-  whatsappNumber: zod.string().nullish(),
   googleMapsUrl: zod.string().nullish(),
+  whatsappNumber: zod.string().nullish(),
   isActive: zod.boolean(),
   isSuspended: zod.boolean(),
   createdAt: zod.coerce.date(),
-  updatedAt: zod.coerce.date(),
+  subscription: zod
+    .object({
+      isActive: zod.boolean(),
+      subscription: zod
+        .object({
+          id: zod.number(),
+          clinicId: zod.number(),
+          plan: zod.enum(["monthly", "quarterly", "yearly"]),
+          status: zod.enum(["active", "expired", "cancelled", "pending"]),
+          startDate: zod.coerce.date().nullish(),
+          endDate: zod.coerce.date().nullish(),
+          amount: zod.number(),
+          notes: zod.string().nullish(),
+          createdAt: zod.coerce.date(),
+        })
+        .optional(),
+      daysRemaining: zod.number().nullish(),
+      expiresAt: zod.coerce.date().nullish(),
+    })
+    .optional(),
+  totalPatients: zod.number(),
+  totalDoctors: zod.number(),
 });
 
 /**
@@ -792,6 +825,11 @@ export const AdminListClinicsResponseItem = zod.object({
   phone: zod.string(),
   email: zod.string(),
   city: zod.string().nullish(),
+  address: zod.string().nullish(),
+  state: zod.string().nullish(),
+  pincode: zod.string().nullish(),
+  googleMapsUrl: zod.string().nullish(),
+  whatsappNumber: zod.string().nullish(),
   isActive: zod.boolean(),
   isSuspended: zod.boolean(),
   createdAt: zod.coerce.date(),

@@ -39,6 +39,7 @@ import type {
   Payment,
   PaymentVerificationResponse,
   PaymentWebhookBody,
+  PublicClinic,
   QueueSummary,
   RazorpayOrder,
   RegisterBody,
@@ -462,6 +463,81 @@ export function useGetMe<
 }
 
 /**
+ * @summary List active clinics (public, minimal fields for patient booking)
+ */
+export const getListPublicClinicsUrl = () => {
+  return `/api/clinics/public`;
+};
+
+export const listPublicClinics = async (
+  options?: RequestInit,
+): Promise<PublicClinic[]> => {
+  return customFetch<PublicClinic[]>(getListPublicClinicsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPublicClinicsQueryKey = () => {
+  return [`/api/clinics/public`] as const;
+};
+
+export const getListPublicClinicsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPublicClinics>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPublicClinics>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListPublicClinicsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listPublicClinics>>
+  > = ({ signal }) => listPublicClinics({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPublicClinics>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPublicClinicsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPublicClinics>>
+>;
+export type ListPublicClinicsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List active clinics (public, minimal fields for patient booking)
+ */
+
+export function useListPublicClinics<
+  TData = Awaited<ReturnType<typeof listPublicClinics>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPublicClinics>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPublicClinicsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary List all clinics (admin only)
  */
 export const getListClinicsUrl = () => {
@@ -621,7 +697,7 @@ export const useCreateClinic = <
 };
 
 /**
- * @summary Get a clinic by ID
+ * @summary Get a clinic by ID (includes subscription status)
  */
 export const getGetClinicUrl = (clinicId: number) => {
   return `/api/clinics/${clinicId}`;
@@ -630,8 +706,8 @@ export const getGetClinicUrl = (clinicId: number) => {
 export const getClinic = async (
   clinicId: number,
   options?: RequestInit,
-): Promise<Clinic> => {
-  return customFetch<Clinic>(getGetClinicUrl(clinicId), {
+): Promise<ClinicWithSubscription> => {
+  return customFetch<ClinicWithSubscription>(getGetClinicUrl(clinicId), {
     ...options,
     method: "GET",
   });
@@ -679,7 +755,7 @@ export type GetClinicQueryResult = NonNullable<
 export type GetClinicQueryError = ErrorType<ErrorResponse>;
 
 /**
- * @summary Get a clinic by ID
+ * @summary Get a clinic by ID (includes subscription status)
  */
 
 export function useGetClinic<

@@ -148,7 +148,7 @@ export default function ClinicsList() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem asChild>
-                                <Link href={`/admin/clinics/${clinic.id}`} className="cursor-pointer flex w-full items-center">
+                                <Link href={`/clinics/${clinic.id}`} className="cursor-pointer flex w-full items-center">
                                   <Eye className="mr-2 h-4 w-4" />
                                   View Details
                                 </Link>

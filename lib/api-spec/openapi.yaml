@@ -145,6 +145,21 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   # Clinics
+  /clinics/public:
+    get:
+      operationId: listPublicClinics
+      tags: [clinics]
+      summary: List active clinics (public, minimal fields for patient booking)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicClinic"
+
   /clinics:
     get:
       operationId: listClinics
@@ -192,7 +207,7 @@ paths:
     get:
       operationId: getClinic
       tags: [clinics]
-      summary: Get a clinic by ID
+      summary: Get a clinic by ID (includes subscription status)
       security:
         - bearerAuth: []
       parameters:
@@ -203,7 +218,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Clinic"
+                $ref: "#/components/schemas/ClinicWithSubscription"
         "404":
           description: Not found
           content:
@@ -984,6 +999,21 @@ components:
         - createdAt
 
     # Clinic schemas
+    PublicClinic:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        city:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+      required:
+        - id
+        - name
+
     Clinic:
       type: object
       properties:
@@ -1115,6 +1145,16 @@ components:
         email:
           type: string
         city:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        state:
+          type: ["string", "null"]
+        pincode:
+          type: ["string", "null"]
+        googleMapsUrl:
+          type: ["string", "null"]
+        whatsappNumber:
           type: ["string", "null"]
         isActive:
           type: boolean

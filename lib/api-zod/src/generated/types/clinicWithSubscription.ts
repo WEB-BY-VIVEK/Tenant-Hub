@@ -16,6 +16,16 @@ export interface ClinicWithSubscription {
   email: string;
   /** @nullable */
   city?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  state?: string | null;
+  /** @nullable */
+  pincode?: string | null;
+  /** @nullable */
+  googleMapsUrl?: string | null;
+  /** @nullable */
+  whatsappNumber?: string | null;
   isActive: boolean;
   isSuspended: boolean;
   createdAt: Date;

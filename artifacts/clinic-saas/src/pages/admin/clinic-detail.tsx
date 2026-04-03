@@ -63,7 +63,7 @@ export default function ClinicDetail() {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold">Clinic not found</h2>
-        <Link href="/admin/clinics">
+        <Link href="/clinics">
           <Button variant="link" className="mt-4">Back to clinics</Button>
         </Link>
       </div>
@@ -73,7 +73,7 @@ export default function ClinicDetail() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/admin/clinics">
+        <Link href="/clinics">
           <Button variant="outline" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -139,19 +139,37 @@ export default function ClinicDetail() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Note: The UI here is slightly mocked since clinic object doesn't have subscription attached in the generic endpoint. 
-                  We'll adapt based on typical SaaS patterns. */}
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Current Plan</span>
-                <Badge variant="outline" className="uppercase font-bold border-primary text-primary">
-                  {/* This would come from clinic.subscription in a real API payload, but we'll show a placeholder */}
-                  Standard
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Status</span>
-                <Badge variant="secondary">Active</Badge>
-              </div>
+              {clinic.subscription ? (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Current Plan</span>
+                    <Badge variant="outline" className="uppercase font-bold border-primary text-primary">
+                      {clinic.subscription.subscription?.plan ?? "—"}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Status</span>
+                    {clinic.subscription.isActive ? (
+                      <Badge className="bg-emerald-500 text-white">Active</Badge>
+                    ) : (
+                      <Badge variant="destructive">Expired</Badge>
+                    )}
+                  </div>
+                  {clinic.subscription.expiresAt && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Expires</span>
+                      <span className="text-sm text-muted-foreground">
+                        {format(new Date(clinic.subscription.expiresAt), "MMM d, yyyy")}
+                        {clinic.subscription.daysRemaining !== null && (
+                          <span className="ml-1 text-xs">({clinic.subscription.daysRemaining}d remaining)</span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">No subscription found for this clinic.</p>
+              )}
             </CardContent>
             <CardFooter>
               <Dialog open={isUpgradeOpen} onOpenChange={setIsUpgradeOpen}>

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, desc } from "drizzle-orm";
 import { db, clinicsTable, usersTable, appointmentsTable, subscriptionsTable } from "@workspace/db";
 import { requireAuth, requireRole } from "../middlewares/auth";
 
@@ -50,7 +50,31 @@ router.get("/clinics/:clinicId", requireAuth, async (req, res): Promise<void> =>
     return;
   }
 
-  res.json(clinic);
+  const subs = await db.select().from(subscriptionsTable)
+    .where(eq(subscriptionsTable.clinicId, clinicId))
+    .orderBy(desc(subscriptionsTable.createdAt))
+    .limit(1);
+  const sub = subs[0];
+  const now = new Date();
+  const isActive = sub ? (sub.status === "active" && (!sub.endDate || new Date(sub.endDate) > now)) : false;
+  const daysRemaining = sub?.endDate
+    ? Math.max(0, Math.ceil((new Date(sub.endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+    : null;
+
+  const [doctorCount] = await db.select({ count: sql<number>`count(*)` })
+    .from(usersTable)
+    .where(and(eq(usersTable.clinicId, clinicId), eq(usersTable.role, "doctor")));
+
+  const [patientCount] = await db.select({ count: sql<number>`count(distinct ${appointmentsTable.patientPhone})` })
+    .from(appointmentsTable)
+    .where(eq(appointmentsTable.clinicId, clinicId));
+
+  res.json({
+    ...clinic,
+    subscription: sub ? { isActive, subscription: sub, daysRemaining, expiresAt: sub.endDate } : null,
+    totalDoctors: Number(doctorCount?.count ?? 0),
+    totalPatients: Number(patientCount?.count ?? 0),
+  });
 });
 
 router.patch("/clinics/:clinicId", requireAuth, async (req, res): Promise<void> => {

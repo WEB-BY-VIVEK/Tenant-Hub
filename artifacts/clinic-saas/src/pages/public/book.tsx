@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,26 +11,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Activity, Loader2, Calendar, Clock, User, ArrowRight, ArrowLeft, QrCode, CheckCircle2 } from "lucide-react";
-import { useBookAppointment } from "@workspace/api-client-react";
+import { useBookAppointment, useListPublicClinics, getListPublicClinicsQueryKey } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
-
-type PublicClinic = { id: number; name: string; city: string | null; address: string | null };
-
-function usePublicClinics() {
-  return useQuery<PublicClinic[]>({
-    queryKey: ["clinics", "public"],
-    queryFn: () =>
-      fetch("/api/clinics/public").then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch clinics");
-        return r.json();
-      }),
-    staleTime: 5 * 60 * 1000,
-  });
-}
 
 const bookingSchema = z.object({
   clinicId: z.coerce.number().min(1, "Please select a clinic"),
@@ -124,7 +109,7 @@ export default function BookAppointment() {
   const [step, setStep] = useState(prefillClinicId ? 2 : 1);
   const [scannedClinicId, setScannedClinicId] = useState<number | null>(null);
 
-  const { data: clinics, isLoading: loadingClinics } = usePublicClinics();
+  const { data: clinics, isLoading: loadingClinics } = useListPublicClinics({ query: { queryKey: getListPublicClinicsQueryKey() } });
   const bookMutation = useBookAppointment();
 
   const form = useForm<z.infer<typeof bookingSchema>>({
@@ -201,9 +186,8 @@ export default function BookAppointment() {
         </Link>
         <div className="text-sm text-muted-foreground flex items-center gap-2">
           {[1, 2, 3].map((s, i) => (
-            <>
+            <Fragment key={s}>
               <span
-                key={s}
                 className={cn(
                   "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium",
                   step >= s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
@@ -214,7 +198,7 @@ export default function BookAppointment() {
               {i < TOTAL_STEPS - 1 && (
                 <span className={cn("h-px w-4", step > s ? "bg-primary" : "bg-border")} />
               )}
-            </>
+            </Fragment>
           ))}
         </div>
       </div>

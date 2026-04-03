@@ -32,6 +32,7 @@ export * from "./payment";
 export * from "./paymentStatus";
 export * from "./paymentVerificationResponse";
 export * from "./paymentWebhookBody";
+export * from "./publicClinic";
 export * from "./queueSummary";
 export * from "./razorpayOrder";
 export * from "./registerBody";
