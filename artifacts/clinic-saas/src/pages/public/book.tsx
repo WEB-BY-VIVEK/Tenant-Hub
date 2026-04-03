@@ -48,43 +48,53 @@ function QrScannerTab({ onClinicId }: { onClinicId: (id: number) => void }) {
   const [scanStatus, setScanStatus] = useState<"idle" | "running" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  useEffect(() => {
-    let mounted = true;
-    async function startScanner() {
-      try {
-        const { Html5Qrcode } = await import("html5-qrcode");
-        if (!scannerDivRef.current || !mounted) return;
-        const html5QrCode = new Html5Qrcode("qr-reader-div");
-        scannerRef.current = html5QrCode;
-        setScanStatus("running");
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 200, height: 200 } },
-          (decodedText) => {
-            const match = decodedText.match(/cdg:clinic:(\d+)/);
-            if (match) {
-              onClinicId(parseInt(match[1], 10));
-            }
-          },
-          () => {}
-        );
-      } catch {
-        if (mounted) {
-          setErrorMsg("Camera unavailable. Please use manual selection.");
-          setScanStatus("error");
-        }
-      }
+  async function startScanner() {
+    setScanStatus("running");
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      if (!scannerDivRef.current) return;
+      const html5QrCode = new Html5Qrcode("qr-reader-div");
+      scannerRef.current = html5QrCode;
+      await html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 200, height: 200 } },
+        (decodedText) => {
+          const match = decodedText.match(/cdg:clinic:(\d+)/);
+          if (match) {
+            scannerRef.current?.stop().catch(() => {});
+            onClinicId(parseInt(match[1], 10));
+          }
+        },
+        () => {}
+      );
+    } catch {
+      setErrorMsg("Camera unavailable. Please select a clinic manually.");
+      setScanStatus("error");
     }
-    startScanner();
+  }
+
+  useEffect(() => {
     return () => {
-      mounted = false;
       scannerRef.current?.stop().catch(() => {});
     };
-  }, [onClinicId]);
+  }, []);
 
   return (
-    <div className="flex flex-col items-center gap-4 py-4">
-      {scanStatus !== "error" && (
+    <div className="flex flex-col items-center gap-4 py-4" data-testid="qr-scanner-tab">
+      {scanStatus === "idle" && (
+        <div className="text-center space-y-4">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <QrCode className="h-8 w-8 text-primary" />
+          </div>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            Scan the clinic's QR code (posted at reception) to instantly select it.
+          </p>
+          <Button type="button" variant="outline" onClick={startScanner} data-testid="btn-start-scan">
+            Start Camera Scan
+          </Button>
+        </div>
+      )}
+      {scanStatus === "running" && (
         <>
           <div
             id="qr-reader-div"
@@ -92,8 +102,7 @@ function QrScannerTab({ onClinicId }: { onClinicId: (id: number) => void }) {
             className="w-full max-w-xs rounded-lg overflow-hidden border shadow"
           />
           <p className="text-sm text-muted-foreground text-center">
-            Point your camera at the clinic's QR code<br />
-            <span className="text-xs">(QR must encode <code>cdg:clinic:ID</code> format)</span>
+            Point your camera at the clinic's QR code
           </p>
         </>
       )}
