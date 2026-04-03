@@ -222,18 +222,10 @@ export default function Settings() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex gap-2 pt-0">
+              <CardFooter className="flex flex-col gap-2 pt-2 pb-4 px-4">
                 <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={handleDownloadQR}
-                  data-testid="btn-download-qr"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download QR
-                </Button>
-                <Button
-                  className="flex-1"
+                  className="w-full"
+                  data-testid="btn-print-qr"
                   onClick={() => {
                     const el = document.getElementById("qr-poster");
                     if (!el) return;
@@ -272,9 +264,17 @@ export default function Settings() {
                     `);
                     win.document.close();
                   }}
-                  data-testid="btn-print-qr"
                 >
                   🖨️ Print Poster
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleDownloadQR}
+                  data-testid="btn-download-qr"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download QR Code
                 </Button>
               </CardFooter>
             </Card>
