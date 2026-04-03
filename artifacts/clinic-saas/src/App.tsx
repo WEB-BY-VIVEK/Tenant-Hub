@@ -28,6 +28,7 @@ import Settings from "@/pages/dashboard/settings";
 import AdminOverview from "@/pages/admin/overview";
 import ClinicsList from "@/pages/admin/clinics";
 import ClinicDetail from "@/pages/admin/clinic-detail";
+import AdminInquiries from "@/pages/admin/inquiries";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +78,7 @@ function Router() {
               <Route path="/" component={AdminOverview} />
               <Route path="/clinics" component={ClinicsList} />
               <Route path="/clinics/:clinicId" component={ClinicDetail} />
+              <Route path="/inquiries" component={AdminInquiries} />
               <Route component={NotFound} />
             </Switch>
           </MainLayout>

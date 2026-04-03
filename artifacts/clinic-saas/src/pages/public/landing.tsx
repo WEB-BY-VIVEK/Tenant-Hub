@@ -40,14 +40,23 @@ export default function Landing() {
   const testimonialsRef = useScrollReveal();
   const contactRef = useScrollReveal();
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
-    setTimeout(() => {
-      setSending(false);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(contactForm),
+      });
+      if (!res.ok) throw new Error("Failed");
       setContactForm({ name: "", phone: "", email: "", message: "" });
       toast({ title: "Message sent!", description: "We'll get back to you within 24 hours." });
-    }, 1000);
+    } catch {
+      toast({ variant: "destructive", title: "Failed to send", description: "Please try again or WhatsApp us directly." });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
