@@ -1,11 +1,14 @@
 import { Router, type IRouter } from "express";
-import { eq, and, sql, like, ilike } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { db, appointmentsTable, tokensTable, clinicsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
+import type { appointmentStatusEnum } from "@workspace/db";
+
+type AppointmentStatus = typeof appointmentStatusEnum.enumValues[number];
 
 const router: IRouter = Router();
 
-async function generateToken(clinicId: number, date: string): Promise<number> {
+async function generateTokenNumber(clinicId: number, date: string): Promise<number> {
   const existing = await db.select({ tokenNumber: tokensTable.tokenNumber })
     .from(tokensTable)
     .where(and(eq(tokensTable.clinicId, clinicId), eq(tokensTable.tokenDate, date)))
@@ -45,7 +48,7 @@ router.post("/appointments/book", async (req, res): Promise<void> => {
     status: "waiting",
   }).returning();
 
-  const tokenNumber = await generateToken(clinicId, appointmentDate);
+  const tokenNumber = await generateTokenNumber(clinicId, appointmentDate);
 
   const [token] = await db.insert(tokensTable).values({
     clinicId,
@@ -63,27 +66,38 @@ router.post("/appointments/book", async (req, res): Promise<void> => {
 });
 
 router.get("/appointments", requireAuth, async (req, res): Promise<void> => {
-  if (!req.user?.clinicId && req.user?.role !== "super_admin") {
-    res.status(403).json({ error: "No clinic associated" });
+  if (!req.user) {
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  const clinicId = req.user.clinicId!;
+  if (req.user.role !== "super_admin" && req.user.clinicId == null) {
+    res.status(403).json({ error: "No clinic associated with your account" });
+    return;
+  }
+
   const { date, status, patientName } = req.query;
 
-  const conditions = [eq(appointmentsTable.clinicId, clinicId)];
+  const conditions = [];
+
+  if (req.user.role !== "super_admin") {
+    conditions.push(eq(appointmentsTable.clinicId, req.user.clinicId!));
+  }
 
   if (date && typeof date === "string") {
     conditions.push(eq(appointmentsTable.appointmentDate, date));
   }
 
   if (status && typeof status === "string") {
-    conditions.push(eq(appointmentsTable.status, status as any));
+    const validStatuses: AppointmentStatus[] = ["waiting", "in_progress", "completed", "cancelled", "rescheduled", "no_show"];
+    if (validStatuses.includes(status as AppointmentStatus)) {
+      conditions.push(eq(appointmentsTable.status, status as AppointmentStatus));
+    }
   }
 
-  const appointments = await db.select().from(appointmentsTable)
-    .where(and(...conditions))
-    .orderBy(appointmentsTable.appointmentDate, appointmentsTable.createdAt);
+  const appointments = conditions.length > 0
+    ? await db.select().from(appointmentsTable).where(and(...conditions)).orderBy(appointmentsTable.appointmentDate, appointmentsTable.createdAt)
+    : await db.select().from(appointmentsTable).orderBy(appointmentsTable.appointmentDate, appointmentsTable.createdAt);
 
   const result = await Promise.all(appointments.map(async (a) => {
     const [token] = await db.select().from(tokensTable).where(eq(tokensTable.appointmentId, a.id)).limit(1);
@@ -136,12 +150,20 @@ router.patch("/appointments/:appointmentId", requireAuth, async (req, res): Prom
 
   const { status, rescheduledDate, rescheduledTimeSlot, notes } = req.body;
 
+  const validStatuses: AppointmentStatus[] = ["waiting", "in_progress", "completed", "cancelled", "rescheduled", "no_show"];
+  const updateStatus: AppointmentStatus | undefined = (status && validStatuses.includes(status)) ? (status as AppointmentStatus) : undefined;
+
   const [updated] = await db.update(appointmentsTable)
-    .set({ status, rescheduledDate, rescheduledTimeSlot, notes })
+    .set({
+      ...(updateStatus !== undefined ? { status: updateStatus } : {}),
+      ...(rescheduledDate !== undefined ? { rescheduledDate } : {}),
+      ...(rescheduledTimeSlot !== undefined ? { rescheduledTimeSlot } : {}),
+      ...(notes !== undefined ? { notes } : {}),
+    })
     .where(eq(appointmentsTable.id, appointmentId))
     .returning();
 
-  if (status === "rescheduled" && rescheduledDate) {
+  if (updateStatus === "rescheduled" && rescheduledDate) {
     await db.update(tokensTable)
       .set({ status: "skipped" })
       .where(eq(tokensTable.appointmentId, appointmentId));

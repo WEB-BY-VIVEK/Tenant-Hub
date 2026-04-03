@@ -1,13 +1,13 @@
 import { Router, type IRouter } from "express";
-import { eq, and, sql, gte, lte, desc } from "drizzle-orm";
-import { db, appointmentsTable, tokensTable, subscriptionsTable, clinicsTable, usersTable, paymentsTable } from "@workspace/db";
-import { requireAuth } from "../middlewares/auth";
+import { eq, and, sql, gte, desc } from "drizzle-orm";
+import { db, appointmentsTable, tokensTable, subscriptionsTable, clinicsTable, paymentsTable } from "@workspace/db";
+import { requireAuth, requireRole } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
 router.get("/dashboard/today", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
-    res.status(403).json({ error: "No clinic associated" });
+    res.status(403).json({ error: "No clinic associated with your account" });
     return;
   }
 
@@ -60,7 +60,7 @@ router.get("/dashboard/today", requireAuth, async (req, res): Promise<void> => {
 
 router.get("/dashboard/queue-summary", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
-    res.status(403).json({ error: "No clinic associated" });
+    res.status(403).json({ error: "No clinic associated with your account" });
     return;
   }
 
@@ -93,7 +93,7 @@ router.get("/dashboard/queue-summary", requireAuth, async (req, res): Promise<vo
 
 router.get("/dashboard/weekly-stats", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
-    res.status(403).json({ error: "No clinic associated" });
+    res.status(403).json({ error: "No clinic associated with your account" });
     return;
   }
 
@@ -121,7 +121,7 @@ router.get("/dashboard/weekly-stats", requireAuth, async (req, res): Promise<voi
 
 router.get("/dashboard/patient-stats", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
-    res.status(403).json({ error: "No clinic associated" });
+    res.status(403).json({ error: "No clinic associated with your account" });
     return;
   }
 
@@ -160,7 +160,8 @@ router.get("/dashboard/patient-stats", requireAuth, async (req, res): Promise<vo
   });
 });
 
-router.get("/dashboard/subscription-health", requireAuth, async (req, res): Promise<void> => {
+// Admin-only: requires super_admin role
+router.get("/dashboard/subscription-health", requireAuth, requireRole("super_admin"), async (req, res): Promise<void> => {
   const now = new Date();
   const oneWeekAhead = new Date(now);
   oneWeekAhead.setDate(oneWeekAhead.getDate() + 7);

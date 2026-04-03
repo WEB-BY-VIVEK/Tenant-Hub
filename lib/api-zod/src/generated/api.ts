@@ -53,6 +53,25 @@ export const LoginResponse = zod.object({
 });
 
 /**
+ * @summary Refresh JWT token
+ */
+export const RefreshTokenResponse = zod.object({
+  token: zod.string(),
+  user: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    email: zod.string(),
+    phone: zod.string(),
+    role: zod.enum(["super_admin", "doctor", "patient"]),
+    clinicId: zod.number().nullish(),
+    specialization: zod.string().nullish(),
+    qualification: zod.string().nullish(),
+    avatarUrl: zod.string().nullish(),
+    createdAt: zod.coerce.date(),
+  }),
+});
+
+/**
  * @summary Get current user
  */
 export const GetMeResponse = zod.object({

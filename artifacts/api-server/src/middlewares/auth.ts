@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { logger } from "../lib/logger";
 
 export interface JwtPayload {
   userId: number;
@@ -16,7 +17,18 @@ declare global {
   }
 }
 
+function getJwtSecret(): string | null {
+  return process.env.JWT_SECRET ?? null;
+}
+
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  const secret = getJwtSecret();
+  if (!secret) {
+    logger.warn("JWT_SECRET is not configured — all authenticated requests will be rejected");
+    res.status(503).json({ error: "Authentication service not configured. Set JWT_SECRET." });
+    return;
+  }
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     res.status(401).json({ error: "Authentication required" });
@@ -24,7 +36,6 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
 
   const token = authHeader.substring(7);
-  const secret = process.env.JWT_SECRET ?? "changeme-jwt-secret";
 
   try {
     const payload = jwt.verify(token, secret) as JwtPayload;

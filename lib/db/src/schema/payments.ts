@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, pgEnum, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { clinicsTable } from "./clinics";
@@ -35,7 +35,13 @@ export const paymentsTable = pgTable("payments", {
   failureReason: text("failure_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index("payments_clinic_id_idx").on(table.clinicId),
+  index("payments_clinic_status_idx").on(table.clinicId, table.status),
+  index("payments_razorpay_order_idx").on(table.razorpayOrderId),
+  index("payments_razorpay_payment_idx").on(table.razorpayPaymentId),
+  index("payments_created_at_idx").on(table.createdAt),
+]);
 
 export const insertPaymentSchema = createInsertSchema(paymentsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;

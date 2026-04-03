@@ -6,13 +6,24 @@ import { requireAuth } from "../middlewares/auth";
 const router: IRouter = Router();
 
 router.get("/invoices", requireAuth, async (req, res): Promise<void> => {
-  if (!req.user?.clinicId && req.user?.role !== "super_admin") {
-    res.status(403).json({ error: "No clinic associated" });
+  if (!req.user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  if (req.user.role !== "super_admin" && req.user.clinicId == null) {
+    res.status(403).json({ error: "No clinic associated with your account" });
+    return;
+  }
+
+  const clinicId = req.user.clinicId;
+  if (clinicId == null) {
+    res.status(400).json({ error: "No clinic specified" });
     return;
   }
 
   const invoices = await db.select().from(invoicesTable)
-    .where(eq(invoicesTable.clinicId, req.user.clinicId!))
+    .where(eq(invoicesTable.clinicId, clinicId))
     .orderBy(desc(invoicesTable.createdAt));
 
   res.json(invoices);

@@ -3,8 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { eq } from "drizzle-orm";
 import { db, usersTable, clinicsTable } from "@workspace/db";
-import { requireAuth } from "../middlewares/auth";
-import { logger } from "../lib/logger";
+import { requireAuth, type JwtPayload } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -12,9 +11,31 @@ function generateSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Math.floor(Math.random() * 1000);
 }
 
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is required");
+  }
+  return secret;
+}
+
 function signToken(payload: { userId: number; email: string; role: string; clinicId: number | null }): string {
-  const secret = process.env.JWT_SECRET ?? "changeme-jwt-secret";
-  return jwt.sign(payload, secret, { expiresIn: "30d" });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "30d" });
+}
+
+function formatUser(user: typeof usersTable.$inferSelect) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    clinicId: user.clinicId,
+    specialization: user.specialization,
+    qualification: user.qualification,
+    avatarUrl: user.avatarUrl,
+    createdAt: user.createdAt,
+  };
 }
 
 router.post("/auth/register", async (req, res): Promise<void> => {
@@ -53,25 +74,10 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     clinicId: clinic.id,
   }).returning();
 
-  const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
-
   req.log.info({ userId: user.id }, "New doctor registered");
 
-  res.status(201).json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      clinicId: user.clinicId,
-      specialization: user.specialization,
-      qualification: user.qualification,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt,
-    },
-  });
+  const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
+  res.status(201).json({ token, user: formatUser(user) });
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {
@@ -96,22 +102,23 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
+  res.json({ token, user: formatUser(user) });
+});
 
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      clinicId: user.clinicId,
-      specialization: user.specialization,
-      qualification: user.qualification,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt,
-    },
-  });
+router.post("/auth/refresh", requireAuth, async (req, res): Promise<void> => {
+  if (!req.user) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.user.userId));
+  if (!user) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+
+  const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
+  res.json({ token, user: formatUser(user) });
 });
 
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
@@ -127,18 +134,7 @@ router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  res.json({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    role: user.role,
-    clinicId: user.clinicId,
-    specialization: user.specialization,
-    qualification: user.qualification,
-    avatarUrl: user.avatarUrl,
-    createdAt: user.createdAt,
-  });
+  res.json(formatUser(user));
 });
 
 export default router;

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, date, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, date, pgEnum, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { clinicsTable } from "./clinics";
@@ -22,7 +22,11 @@ export const tokensTable = pgTable("tokens", {
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index("tokens_clinic_date_idx").on(table.clinicId, table.tokenDate),
+  index("tokens_clinic_date_status_idx").on(table.clinicId, table.tokenDate, table.status),
+  index("tokens_appointment_id_idx").on(table.appointmentId),
+]);
 
 export const insertTokenSchema = createInsertSchema(tokensTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertToken = z.infer<typeof insertTokenSchema>;

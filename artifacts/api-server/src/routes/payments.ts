@@ -4,20 +4,31 @@ import { eq, desc } from "drizzle-orm";
 import { db, paymentsTable, subscriptionsTable, invoicesTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
 import { logger } from "../lib/logger";
+import type { subscriptionPlanEnum } from "@workspace/db";
+
+type SubscriptionPlan = typeof subscriptionPlanEnum.enumValues[number];
 
 const router: IRouter = Router();
 
-const PLAN_AMOUNTS: Record<string, number> = {
+const PLAN_AMOUNTS_PAISE: Record<SubscriptionPlan, number> = {
   monthly: 99900,
   quarterly: 249900,
   yearly: 999900,
 };
 
-const PLAN_MONTHS: Record<string, number> = {
+const PLAN_AMOUNTS_INR: Record<SubscriptionPlan, number> = {
+  monthly: 999,
+  quarterly: 2499,
+  yearly: 9999,
+};
+
+const PLAN_MONTHS: Record<SubscriptionPlan, number> = {
   monthly: 1,
   quarterly: 3,
   yearly: 12,
 };
+
+const VALID_PLANS: SubscriptionPlan[] = ["monthly", "quarterly", "yearly"];
 
 function generateInvoiceNumber(): string {
   const date = new Date();
@@ -29,21 +40,22 @@ function generateInvoiceNumber(): string {
 
 router.post("/payments/create-order", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
-    res.status(403).json({ error: "No clinic associated" });
+    res.status(403).json({ error: "No clinic associated with your account" });
     return;
   }
 
   const { plan } = req.body;
-  if (!plan || !PLAN_AMOUNTS[plan]) {
-    res.status(400).json({ error: "Invalid plan" });
+  if (!plan || !VALID_PLANS.includes(plan)) {
+    res.status(400).json({ error: "Invalid plan. Must be monthly, quarterly, or yearly" });
     return;
   }
 
+  const typedPlan: SubscriptionPlan = plan as SubscriptionPlan;
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_SECRET;
 
   if (!keyId || !keySecret) {
-    res.status(500).json({ error: "Payment gateway not configured" });
+    res.status(503).json({ error: "Payment gateway not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_SECRET." });
     return;
   }
 
@@ -52,16 +64,16 @@ router.post("/payments/create-order", requireAuth, async (req, res): Promise<voi
     const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
 
     const order = await razorpay.orders.create({
-      amount: PLAN_AMOUNTS[plan],
+      amount: PLAN_AMOUNTS_PAISE[typedPlan],
       currency: "INR",
       receipt: `rcpt_${req.user.clinicId}_${Date.now()}`,
     });
 
     res.json({
       orderId: order.id,
-      amount: PLAN_AMOUNTS[plan],
+      amount: PLAN_AMOUNTS_PAISE[typedPlan],
       currency: "INR",
-      plan,
+      plan: typedPlan,
       keyId,
     });
   } catch (err) {
@@ -72,11 +84,23 @@ router.post("/payments/create-order", requireAuth, async (req, res): Promise<voi
 
 router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
-    res.status(403).json({ error: "No clinic associated" });
+    res.status(403).json({ error: "No clinic associated with your account" });
     return;
   }
 
   const { razorpayOrderId, razorpayPaymentId, razorpaySignature, plan } = req.body;
+
+  if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature || !plan) {
+    res.status(400).json({ error: "Missing required payment verification fields" });
+    return;
+  }
+
+  if (!VALID_PLANS.includes(plan)) {
+    res.status(400).json({ error: "Invalid plan" });
+    return;
+  }
+
+  const typedPlan: SubscriptionPlan = plan as SubscriptionPlan;
   const keySecret = process.env.RAZORPAY_SECRET ?? "";
 
   const expectedSignature = crypto
@@ -90,8 +114,8 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
   }
 
   const clinicId = req.user.clinicId;
-  const amount = (PLAN_AMOUNTS[plan] ?? 99900) / 100;
-  const months = PLAN_MONTHS[plan] ?? 1;
+  const amountInr = PLAN_AMOUNTS_INR[typedPlan];
+  const months = PLAN_MONTHS[typedPlan];
 
   const now = new Date();
   const endDate = new Date(now);
@@ -99,11 +123,11 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
 
   const [subscription] = await db.insert(subscriptionsTable).values({
     clinicId,
-    plan: plan as any,
+    plan: typedPlan,
     status: "active",
     startDate: now,
     endDate,
-    amount,
+    amount: amountInr,
   }).returning();
 
   const [payment] = await db.insert(paymentsTable).values({
@@ -112,7 +136,7 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
     razorpayOrderId,
     razorpayPaymentId,
     razorpaySignature,
-    amount,
+    amount: amountInr,
     currency: "INR",
     status: "success",
   }).returning();
@@ -122,9 +146,9 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
     clinicId,
     paymentId: payment.id,
     subscriptionId: subscription.id,
-    amount,
+    amount: amountInr,
     currency: "INR",
-    description: `${plan} subscription recharge`,
+    description: `${typedPlan} subscription recharge`,
     issuedAt: now,
   }).returning();
 
@@ -143,11 +167,11 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
     }
   }
 
-  const event = req.body.event;
+  const event = req.body?.event as string | undefined;
   logger.info({ event }, "Razorpay webhook received");
 
   if (event === "payment.failed") {
-    const paymentId = req.body.payload?.payment?.entity?.id;
+    const paymentId = req.body?.payload?.payment?.entity?.id as string | undefined;
     if (paymentId) {
       await db.update(paymentsTable)
         .set({ status: "failed" })
@@ -160,7 +184,7 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
 
 router.get("/payments/history", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
-    res.status(403).json({ error: "No clinic associated" });
+    res.status(403).json({ error: "No clinic associated with your account" });
     return;
   }
 
