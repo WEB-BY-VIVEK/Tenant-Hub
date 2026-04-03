@@ -71,7 +71,7 @@ export default function Settings() {
   }, [clinic, form]);
 
   const bookingUrl = clinicId
-    ? `${window.location.origin}/book?clinicId=${clinicId}`
+    ? `${window.location.origin}/book?clinic=${clinicId}`
     : "";
 
   const handleDownloadQR = () => {

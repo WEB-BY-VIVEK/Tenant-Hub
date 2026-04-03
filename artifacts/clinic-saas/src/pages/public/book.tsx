@@ -44,7 +44,11 @@ function QrScannerTab({ onClinicId }: { onClinicId: (id: number) => void }) {
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 200, height: 200 } },
         (decodedText) => {
-          const match = decodedText.match(/cdg:clinic:(\d+)/);
+          // Support full booking URL: /book?clinic=ID
+          const urlMatch = decodedText.match(/[?&]clinic=(\d+)/);
+          // Support legacy format: cdg:clinic:ID
+          const legacyMatch = decodedText.match(/cdg:clinic:(\d+)/);
+          const match = urlMatch || legacyMatch;
           if (match) {
             scannerRef.current?.stop().catch(() => {});
             onClinicId(parseInt(match[1], 10));
