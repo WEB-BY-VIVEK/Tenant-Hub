@@ -1,0 +1,58 @@
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567801",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide1Title.tsx",
+    "title": "Title — Clinic Digital Growth",
+    "description": "Hero title slide with clinic background image, brand lockup, and tagline",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567802",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide2Problem.tsx",
+    "title": "The Problem",
+    "description": "Bold stat-forward layout highlighting the paper-token problem, with 3 pain-point callouts",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567803",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide3Solution.tsx",
+    "title": "The Solution",
+    "description": "Two-column layout: platform description on the left, smart queue and booking flow visual on the right",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567804",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide4Features.tsx",
+    "title": "Key Features",
+    "description": "Three-column feature card layout: Smart Token Queue, Online Booking Portal, Doctor Analytics Dashboard",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567805",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide5HowItWorks.tsx",
+    "title": "How It Works",
+    "description": "Step-by-step patient journey: QR scan to token confirmation to consultation, 3 numbered steps",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567806",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide6Pricing.tsx",
+    "title": "Pricing",
+    "description": "Three pricing tiers side by side — Monthly (999), Quarterly (2499), Yearly (9999) — with setup package callout",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567807",
+    "position": 7,
+    "filepath": "src/pages/slides/Slide7CTA.tsx",
+    "title": "Ready to Go Digital?",
+    "description": "Full-bleed dark closing CTA with bold headline, website, email and phone contact details",
+    "speakerNotes": ""
+  }
+]
