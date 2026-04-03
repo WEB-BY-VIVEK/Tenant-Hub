@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface TopClinic {
+  clinicId: number;
+  clinicName: string;
+  totalPatients: number;
+  /** @nullable */
+  plan?: string | null;
 }

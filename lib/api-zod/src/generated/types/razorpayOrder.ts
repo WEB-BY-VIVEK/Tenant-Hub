@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface RazorpayOrder {
+  orderId: string;
+  amount: number;
+  currency: string;
+  plan: string;
+  keyId: string;
 }

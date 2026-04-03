@@ -3,13 +3,33 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Clinic Digital Growth SaaS Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: clinics
+    description: Clinic management
+  - name: doctors
+    description: Doctor management
+  - name: appointments
+    description: Appointment booking and management
+  - name: tokens
+    description: Token queue management
+  - name: subscriptions
+    description: Subscription management
+  - name: payments
+    description: Payment processing
+  - name: invoices
+    description: Invoice management
+  - name: admin
+    description: Super admin operations
+  - name: dashboard
+    description: Dashboard analytics
 paths:
   /healthz:
     get:
@@ -24,7 +44,827 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # Auth
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new doctor/clinic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Clinics
+  /clinics:
+    get:
+      operationId: listClinics
+      tags: [clinics]
+      summary: List all clinics (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clinic"
+
+    post:
+      operationId: createClinic
+      tags: [clinics]
+      summary: Create a clinic
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClinicBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clinic"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /clinics/{clinicId}:
+    get:
+      operationId: getClinic
+      tags: [clinics]
+      summary: Get a clinic by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/clinicId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clinic"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      operationId: updateClinic
+      tags: [clinics]
+      summary: Update a clinic
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/clinicId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateClinicBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clinic"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /clinics/{clinicId}/suspend:
+    post:
+      operationId: suspendClinic
+      tags: [clinics]
+      summary: Suspend or reactivate a clinic (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/clinicId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuspendClinicBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clinic"
+
+  # Doctors
+  /clinics/{clinicId}/doctors:
+    get:
+      operationId: listDoctors
+      tags: [doctors]
+      summary: List doctors for a clinic
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/clinicId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Doctor"
+
+    post:
+      operationId: createDoctor
+      tags: [doctors]
+      summary: Add a doctor to a clinic
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/clinicId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDoctorBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Doctor"
+
+  /clinics/{clinicId}/doctors/{doctorId}:
+    get:
+      operationId: getDoctor
+      tags: [doctors]
+      summary: Get a doctor
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/clinicId"
+        - $ref: "#/components/parameters/doctorId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Doctor"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      operationId: updateDoctor
+      tags: [doctors]
+      summary: Update a doctor
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/clinicId"
+        - $ref: "#/components/parameters/doctorId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDoctorBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Doctor"
+
+  # Appointments (public booking)
+  /appointments/book:
+    post:
+      operationId: bookAppointment
+      tags: [appointments]
+      summary: Book an appointment (public - no auth required)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookAppointmentBody"
+      responses:
+        "201":
+          description: Booked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingConfirmation"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /appointments:
+    get:
+      operationId: listAppointments
+      tags: [appointments]
+      summary: List appointments for the authenticated doctor's clinic
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+          description: Filter by date (YYYY-MM-DD)
+        - name: status
+          in: query
+          schema:
+            type: string
+          description: Filter by status
+        - name: patientName
+          in: query
+          schema:
+            type: string
+          description: Filter by patient name
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AppointmentWithToken"
+
+  /appointments/{appointmentId}:
+    get:
+      operationId: getAppointment
+      tags: [appointments]
+      summary: Get an appointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/appointmentId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentWithToken"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      operationId: updateAppointment
+      tags: [appointments]
+      summary: Update appointment status or reschedule
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/appointmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAppointmentBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppointmentWithToken"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Token Queue
+  /tokens/queue:
+    get:
+      operationId: getTokenQueue
+      tags: [tokens]
+      summary: Get today's token queue for the authenticated clinic
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+          description: Date (YYYY-MM-DD), defaults to today
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TokenWithAppointment"
+
+  /tokens/{tokenId}/status:
+    patch:
+      operationId: updateTokenStatus
+      tags: [tokens]
+      summary: Update token status (call next, complete, skip)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/tokenId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTokenStatusBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Token"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Subscriptions
+  /subscriptions/current:
+    get:
+      operationId: getCurrentSubscription
+      tags: [subscriptions]
+      summary: Get current subscription for the authenticated clinic
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionStatus"
+        "404":
+          description: No subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /subscriptions/history:
+    get:
+      operationId: getSubscriptionHistory
+      tags: [subscriptions]
+      summary: Get subscription history for the authenticated clinic
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subscription"
+
+  /subscriptions/{clinicId}/upgrade:
+    post:
+      operationId: upgradeSubscription
+      tags: [subscriptions]
+      summary: Upgrade a clinic subscription (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/clinicId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpgradeSubscriptionBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+
+  # Payments
+  /payments/create-order:
+    post:
+      operationId: createPaymentOrder
+      tags: [payments]
+      summary: Create a Razorpay payment order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RazorpayOrder"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /payments/verify:
+    post:
+      operationId: verifyPayment
+      tags: [payments]
+      summary: Verify Razorpay payment signature
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyPaymentBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentVerificationResponse"
+        "400":
+          description: Invalid signature
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /payments/webhook:
+    post:
+      operationId: paymentWebhook
+      tags: [payments]
+      summary: Razorpay webhook endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /payments/history:
+    get:
+      operationId: listPayments
+      tags: [payments]
+      summary: List payments for the authenticated clinic
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
+
+  # Invoices
+  /invoices:
+    get:
+      operationId: listInvoices
+      tags: [invoices]
+      summary: List invoices for the authenticated clinic
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invoice"
+
+  /invoices/{invoiceId}:
+    get:
+      operationId: getInvoice
+      tags: [invoices]
+      summary: Get an invoice by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/invoiceId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Admin
+  /admin/clinics:
+    get:
+      operationId: adminListClinics
+      tags: [admin]
+      summary: List all clinics with subscription details (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClinicWithSubscription"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get platform-wide stats (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/revenue:
+    get:
+      operationId: getRevenueChart
+      tags: [admin]
+      summary: Get monthly revenue chart data (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: months
+          in: query
+          schema:
+            type: integer
+          description: Number of months to include (default 6)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenueDataPoint"
+
+  # Dashboard analytics (wow endpoints)
+  /dashboard/today:
+    get:
+      operationId: getDashboardToday
+      tags: [dashboard]
+      summary: Get today's dashboard summary for authenticated doctor
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TodayDashboard"
+
+  /dashboard/queue-summary:
+    get:
+      operationId: getQueueSummary
+      tags: [dashboard]
+      summary: Get real-time queue summary for the clinic
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueueSummary"
+
+  /dashboard/weekly-stats:
+    get:
+      operationId: getWeeklyStats
+      tags: [dashboard]
+      summary: Get weekly appointment stats for the clinic
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeeklyStatPoint"
+
+  /dashboard/patient-stats:
+    get:
+      operationId: getPatientStats
+      tags: [dashboard]
+      summary: Get total patient count and growth stats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatientStats"
+
+  /dashboard/subscription-health:
+    get:
+      operationId: getSubscriptionHealth
+      tags: [dashboard]
+      summary: Get subscription health overview (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionHealth"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    clinicId:
+      name: clinicId
+      in: path
+      required: true
+      schema:
+        type: integer
+
+    doctorId:
+      name: doctorId
+      in: path
+      required: true
+      schema:
+        type: integer
+
+    appointmentId:
+      name: appointmentId
+      in: path
+      required: true
+      schema:
+        type: integer
+
+    tokenId:
+      name: tokenId
+      in: path
+      required: true
+      schema:
+        type: integer
+
+    invoiceId:
+      name: invoiceId
+      in: path
+      required: true
+      schema:
+        type: integer
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +874,846 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    # Auth schemas
+    RegisterBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+        clinicName:
+          type: string
+        clinicAddress:
+          type: string
+        clinicCity:
+          type: string
+      required:
+        - name
+        - email
+        - phone
+        - password
+        - clinicName
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserProfile"
+      required:
+        - token
+        - user
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, doctor, patient]
+        clinicId:
+          type: ["integer", "null"]
+        specialization:
+          type: ["string", "null"]
+        qualification:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - phone
+        - role
+        - createdAt
+
+    # Clinic schemas
+    Clinic:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        ownerName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        address:
+          type: ["string", "null"]
+        city:
+          type: ["string", "null"]
+        state:
+          type: ["string", "null"]
+        pincode:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        whatsappNumber:
+          type: ["string", "null"]
+        googleMapsUrl:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        isSuspended:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - slug
+        - ownerName
+        - phone
+        - email
+        - isActive
+        - isSuspended
+        - createdAt
+        - updatedAt
+
+    CreateClinicBody:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        ownerName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        whatsappNumber:
+          type: string
+        googleMapsUrl:
+          type: string
+      required:
+        - name
+        - slug
+        - ownerName
+        - phone
+        - email
+
+    UpdateClinicBody:
+      type: object
+      properties:
+        name:
+          type: string
+        ownerName:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        logoUrl:
+          type: string
+        whatsappNumber:
+          type: string
+        googleMapsUrl:
+          type: string
+
+    SuspendClinicBody:
+      type: object
+      properties:
+        suspend:
+          type: boolean
+      required:
+        - suspend
+
+    ClinicWithSubscription:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        ownerName:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        city:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        isSuspended:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        subscription:
+          $ref: "#/components/schemas/SubscriptionStatus"
+        totalPatients:
+          type: integer
+        totalDoctors:
+          type: integer
+      required:
+        - id
+        - name
+        - slug
+        - ownerName
+        - phone
+        - email
+        - isActive
+        - isSuspended
+        - createdAt
+        - totalPatients
+        - totalDoctors
+
+    # Doctor schemas
+    Doctor:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        specialization:
+          type: ["string", "null"]
+        qualification:
+          type: ["string", "null"]
+        experience:
+          type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        clinicId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - email
+        - phone
+        - createdAt
+
+    CreateDoctorBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+        specialization:
+          type: string
+        qualification:
+          type: string
+        experience:
+          type: string
+        bio:
+          type: string
+      required:
+        - name
+        - email
+        - phone
+        - password
+
+    UpdateDoctorBody:
+      type: object
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        specialization:
+          type: string
+        qualification:
+          type: string
+        experience:
+          type: string
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+
+    # Appointment schemas
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: integer
+        clinicId:
+          type: integer
+        doctorId:
+          type: ["integer", "null"]
+        patientName:
+          type: string
+        patientPhone:
+          type: string
+        patientEmail:
+          type: ["string", "null"]
+        appointmentDate:
+          type: string
+        timeSlot:
+          type: string
+        reason:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [waiting, in_progress, completed, cancelled, rescheduled, no_show]
+        rescheduledDate:
+          type: ["string", "null"]
+        rescheduledTimeSlot:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clinicId
+        - patientName
+        - patientPhone
+        - appointmentDate
+        - timeSlot
+        - status
+        - createdAt
+        - updatedAt
+
+    AppointmentWithToken:
+      allOf:
+        - $ref: "#/components/schemas/Appointment"
+        - type: object
+          properties:
+            token:
+              $ref: "#/components/schemas/Token"
+
+    BookAppointmentBody:
+      type: object
+      properties:
+        clinicId:
+          type: integer
+        patientName:
+          type: string
+        patientPhone:
+          type: string
+        patientEmail:
+          type: string
+        appointmentDate:
+          type: string
+        timeSlot:
+          type: string
+        reason:
+          type: string
+      required:
+        - clinicId
+        - patientName
+        - patientPhone
+        - appointmentDate
+        - timeSlot
+
+    BookingConfirmation:
+      type: object
+      properties:
+        appointment:
+          $ref: "#/components/schemas/Appointment"
+        token:
+          $ref: "#/components/schemas/Token"
+        message:
+          type: string
+      required:
+        - appointment
+        - token
+        - message
+
+    UpdateAppointmentBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [waiting, in_progress, completed, cancelled, rescheduled, no_show]
+        rescheduledDate:
+          type: string
+        rescheduledTimeSlot:
+          type: string
+        notes:
+          type: string
+
+    # Token schemas
+    Token:
+      type: object
+      properties:
+        id:
+          type: integer
+        clinicId:
+          type: integer
+        appointmentId:
+          type: integer
+        tokenNumber:
+          type: integer
+        tokenDate:
+          type: string
+        status:
+          type: string
+          enum: [waiting, called, completed, skipped]
+        calledAt:
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clinicId
+        - appointmentId
+        - tokenNumber
+        - tokenDate
+        - status
+        - createdAt
+
+    TokenWithAppointment:
+      allOf:
+        - $ref: "#/components/schemas/Token"
+        - type: object
+          properties:
+            appointment:
+              $ref: "#/components/schemas/Appointment"
+
+    UpdateTokenStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [waiting, called, completed, skipped]
+      required:
+        - status
+
+    # Subscription schemas
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: integer
+        clinicId:
+          type: integer
+        plan:
+          type: string
+          enum: [monthly, quarterly, yearly]
+        status:
+          type: string
+          enum: [active, expired, cancelled, pending]
+        startDate:
+          type: ["string", "null"]
+          format: date-time
+        endDate:
+          type: ["string", "null"]
+          format: date-time
+        amount:
+          type: integer
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clinicId
+        - plan
+        - status
+        - amount
+        - createdAt
+
+    SubscriptionStatus:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+        subscription:
+          $ref: "#/components/schemas/Subscription"
+        daysRemaining:
+          type: ["integer", "null"]
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - isActive
+
+    UpgradeSubscriptionBody:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [monthly, quarterly, yearly]
+        durationMonths:
+          type: integer
+      required:
+        - plan
+
+    # Payment schemas
+    CreateOrderBody:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [monthly, quarterly, yearly]
+      required:
+        - plan
+
+    RazorpayOrder:
+      type: object
+      properties:
+        orderId:
+          type: string
+        amount:
+          type: integer
+        currency:
+          type: string
+        plan:
+          type: string
+        keyId:
+          type: string
+      required:
+        - orderId
+        - amount
+        - currency
+        - plan
+        - keyId
+
+    VerifyPaymentBody:
+      type: object
+      properties:
+        razorpayOrderId:
+          type: string
+        razorpayPaymentId:
+          type: string
+        razorpaySignature:
+          type: string
+        plan:
+          type: string
+          enum: [monthly, quarterly, yearly]
+      required:
+        - razorpayOrderId
+        - razorpayPaymentId
+        - razorpaySignature
+        - plan
+
+    PaymentVerificationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        payment:
+          $ref: "#/components/schemas/Payment"
+        subscription:
+          $ref: "#/components/schemas/Subscription"
+        invoice:
+          $ref: "#/components/schemas/Invoice"
+      required:
+        - success
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+        clinicId:
+          type: integer
+        subscriptionId:
+          type: ["integer", "null"]
+        razorpayOrderId:
+          type: ["string", "null"]
+        razorpayPaymentId:
+          type: ["string", "null"]
+        amount:
+          type: integer
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [pending, success, failed, refunded]
+        method:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clinicId
+        - amount
+        - currency
+        - status
+        - createdAt
+
+    # Invoice schemas
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+        invoiceNumber:
+          type: string
+        clinicId:
+          type: integer
+        paymentId:
+          type: ["integer", "null"]
+        subscriptionId:
+          type: ["integer", "null"]
+        amount:
+          type: integer
+        currency:
+          type: string
+        description:
+          type: ["string", "null"]
+        issuedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - invoiceNumber
+        - clinicId
+        - amount
+        - currency
+        - issuedAt
+        - createdAt
+
+    # Admin schemas
+    AdminStats:
+      type: object
+      properties:
+        totalClinics:
+          type: integer
+        activeClinics:
+          type: integer
+        expiredClinics:
+          type: integer
+        suspendedClinics:
+          type: integer
+        totalDoctors:
+          type: integer
+        totalPatients:
+          type: integer
+        totalRevenue:
+          type: integer
+        monthlyRevenue:
+          type: integer
+      required:
+        - totalClinics
+        - activeClinics
+        - expiredClinics
+        - suspendedClinics
+        - totalDoctors
+        - totalPatients
+        - totalRevenue
+        - monthlyRevenue
+
+    RevenueDataPoint:
+      type: object
+      properties:
+        month:
+          type: string
+        revenue:
+          type: integer
+        subscriptions:
+          type: integer
+      required:
+        - month
+        - revenue
+        - subscriptions
+
+    # Dashboard / wow schemas
+    TodayDashboard:
+      type: object
+      properties:
+        totalAppointmentsToday:
+          type: integer
+        completedToday:
+          type: integer
+        waitingToday:
+          type: integer
+        currentToken:
+          type: ["integer", "null"]
+        nextToken:
+          type: ["integer", "null"]
+        totalPatientsAllTime:
+          type: integer
+        subscriptionStatus:
+          $ref: "#/components/schemas/SubscriptionStatus"
+      required:
+        - totalAppointmentsToday
+        - completedToday
+        - waitingToday
+        - totalPatientsAllTime
+        - subscriptionStatus
+
+    QueueSummary:
+      type: object
+      properties:
+        date:
+          type: string
+        totalTokens:
+          type: integer
+        waitingCount:
+          type: integer
+        calledCount:
+          type: integer
+        completedCount:
+          type: integer
+        skippedCount:
+          type: integer
+        currentToken:
+          type: ["integer", "null"]
+        estimatedWaitMinutes:
+          type: ["integer", "null"]
+      required:
+        - date
+        - totalTokens
+        - waitingCount
+        - calledCount
+        - completedCount
+        - skippedCount
+
+    WeeklyStatPoint:
+      type: object
+      properties:
+        date:
+          type: string
+        appointments:
+          type: integer
+        completed:
+          type: integer
+        cancelled:
+          type: integer
+      required:
+        - date
+        - appointments
+        - completed
+        - cancelled
+
+    PatientStats:
+      type: object
+      properties:
+        totalPatients:
+          type: integer
+        newThisMonth:
+          type: integer
+        newThisWeek:
+          type: integer
+        repeatPatients:
+          type: integer
+      required:
+        - totalPatients
+        - newThisMonth
+        - newThisWeek
+        - repeatPatients
+
+    SubscriptionHealth:
+      type: object
+      properties:
+        totalActive:
+          type: integer
+        totalExpired:
+          type: integer
+        expiringThisWeek:
+          type: integer
+        activeRate:
+          type: number
+        topClinics:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopClinic"
+      required:
+        - totalActive
+        - totalExpired
+        - expiringThisWeek
+        - activeRate
+        - topClinics
+
+    TopClinic:
+      type: object
+      properties:
+        clinicId:
+          type: integer
+        clinicName:
+          type: string
+        totalPatients:
+          type: integer
+        plan:
+          type: ["string", "null"]
+      required:
+        - clinicId
+        - clinicName
+        - totalPatients

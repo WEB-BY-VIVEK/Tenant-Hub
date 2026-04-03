@@ -5,7 +5,8 @@
  * Clinic Digital Growth SaaS Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateOrderBodyPlan } from "./createOrderBodyPlan";
 
-export interface HealthStatus {
-  status: string;
+export interface CreateOrderBody {
+  plan: CreateOrderBodyPlan;
 }
