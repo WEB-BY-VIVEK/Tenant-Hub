@@ -65,7 +65,6 @@ export default function Landing() {
         .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
         .reveal.animate-in { opacity: 1; transform: translateY(0); }
       `}</style>
-
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -86,7 +85,6 @@ export default function Landing() {
           </div>
         </div>
       </header>
-
       <main className="flex-1">
         {/* Hero Section */}
         <section className="py-24 lg:py-32 bg-gradient-to-b from-primary/5 to-background">
@@ -310,7 +308,7 @@ export default function Landing() {
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Phone className="h-4 w-4 text-primary" />
                     </div>
-                    <span>+91 98765 43210 (Mon–Sat, 9 AM – 7 PM)</span>
+                    <span>+91 9560990946 (Mon–Sat, 9 AM – 7 PM)</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -345,9 +343,7 @@ export default function Landing() {
           </div>
         </section>
       </main>
-
       <SiteFooter />
-
       {/* Floating WhatsApp Button */}
       <a 
         href="https://wa.me/919876543210" 
