@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListAppointments, useUpdateAppointment } from "@workspace/api-client-react";
+import { useListAppointments, useUpdateAppointment, UpdateAppointmentBodyStatus } from "@workspace/api-client-react";
 import { getListAppointmentsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,7 @@ export default function Appointments() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const handleStatusChange = (appointmentId: number, newStatus: any) => {
+  const handleStatusChange = (appointmentId: number, newStatus: UpdateAppointmentBodyStatus) => {
     updateAppointment.mutate(
       { appointmentId, data: { status: newStatus } },
       {
@@ -179,7 +179,7 @@ export default function Appointments() {
                         <TableCell className="text-right">
                           <Select 
                             value={appt.status} 
-                            onValueChange={(val) => handleStatusChange(appt.id, val)}
+                            onValueChange={(val) => handleStatusChange(appt.id, val as UpdateAppointmentBodyStatus)}
                             disabled={updateAppointment.isPending}
                           >
                             <SelectTrigger className="w-[130px] h-8 ml-auto" data-testid={`select-action-appt-${appt.id}`}>
