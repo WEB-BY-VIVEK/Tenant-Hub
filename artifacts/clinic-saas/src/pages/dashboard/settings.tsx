@@ -163,34 +163,118 @@ export default function Settings() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <QrCode className="h-5 w-5 text-primary" />
-                  Reception QR Code
+                  Reception QR Poster
                 </CardTitle>
                 <CardDescription>
-                  Print and place this at your reception. Patients scan it to book instantly.
+                  Print and place at reception. Patients scan to book instantly.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col items-center gap-4">
-                <div className="p-3 bg-white rounded-lg border shadow-sm" ref={qrCanvasRef}>
-                  <QRCodeCanvas
-                    value={bookingUrl}
-                    size={180}
-                    level="H"
-                    includeMargin
-                  />
+              <CardContent className="p-3">
+                {/* Printable poster card */}
+                <div
+                  ref={qrCanvasRef}
+                  id="qr-poster"
+                  className="bg-white rounded-xl border-2 border-primary/30 p-4 flex flex-col items-center gap-3 text-center"
+                >
+                  {/* Header bar */}
+                  <div className="w-full rounded-lg bg-primary px-3 py-2">
+                    <p className="text-white text-xs font-semibold uppercase tracking-widest">Book Your Appointment</p>
+                  </div>
+
+                  {/* Clinic name */}
+                  <div>
+                    <p className="text-base font-bold text-gray-900 leading-tight">{clinic?.name}</p>
+                    {clinic?.ownerName && (
+                      <p className="text-xs text-gray-500">Dr. {clinic.ownerName}</p>
+                    )}
+                  </div>
+
+                  {/* QR code */}
+                  <div className="p-2 bg-white rounded-lg border shadow-inner">
+                    <QRCodeCanvas
+                      value={bookingUrl}
+                      size={160}
+                      level="H"
+                      includeMargin
+                    />
+                  </div>
+
+                  <p className="text-xs font-medium text-primary">📱 Scan with your phone camera</p>
+
+                  {/* Clinic details */}
+                  <div className="w-full text-left space-y-1 border-t pt-3 mt-1">
+                    {clinic?.phone && (
+                      <p className="text-xs text-gray-700">📞 {clinic.phone}</p>
+                    )}
+                    {clinic?.whatsappNumber && (
+                      <p className="text-xs text-gray-700">💬 WhatsApp: {clinic.whatsappNumber}</p>
+                    )}
+                    {(clinic?.address || clinic?.city) && (
+                      <p className="text-xs text-gray-700">
+                        📍 {[clinic?.address, clinic?.city, clinic?.state, clinic?.pincode].filter(Boolean).join(", ")}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="w-full rounded-md bg-gray-50 border px-2 py-1">
+                    <p className="text-[10px] text-gray-400 break-all">{bookingUrl}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground text-center break-all px-2">
-                  {bookingUrl}
-                </p>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex gap-2 pt-0">
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="flex-1"
                   onClick={handleDownloadQR}
                   data-testid="btn-download-qr"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Download QR Code
+                  Download QR
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => {
+                    const el = document.getElementById("qr-poster");
+                    if (!el) return;
+                    const win = window.open("", "_blank");
+                    if (!win) return;
+                    win.document.write(`
+                      <html><head><title>Reception QR Poster</title>
+                      <style>
+                        body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5; font-family: sans-serif; }
+                        .poster { background: white; border: 2px solid #1a3a6e; border-radius: 12px; padding: 20px; width: 320px; text-align: center; }
+                        .header { background: #1a3a6e; border-radius: 8px; padding: 8px 12px; color: white; font-size: 11px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+                        .clinic-name { font-size: 16px; font-weight: bold; color: #111; }
+                        .doctor-name { font-size: 11px; color: #666; margin-top: 2px; }
+                        .qr-wrap { border: 1px solid #ddd; border-radius: 8px; padding: 8px; display: inline-block; margin: 12px 0; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+                        .scan-hint { font-size: 11px; font-weight: 600; color: #1a3a6e; margin-bottom: 12px; }
+                        .details { text-align: left; border-top: 1px solid #eee; padding-top: 10px; margin-top: 4px; }
+                        .detail-row { font-size: 11px; color: #444; margin-bottom: 4px; }
+                        .url-box { background: #f9f9f9; border: 1px solid #eee; border-radius: 6px; padding: 6px 8px; margin-top: 10px; font-size: 9px; color: #999; word-break: break-all; }
+                        @media print { body { background: white; } }
+                      </style></head><body>
+                      <div class="poster">
+                        <div class="header">Book Your Appointment</div>
+                        <div class="clinic-name">${clinic?.name ?? ""}</div>
+                        ${clinic?.ownerName ? `<div class="doctor-name">Dr. ${clinic.ownerName}</div>` : ""}
+                        <div class="qr-wrap">${el.querySelector("canvas")?.outerHTML ?? ""}</div>
+                        <div class="scan-hint">📱 Scan with your phone camera</div>
+                        <div class="details">
+                          ${clinic?.phone ? `<div class="detail-row">📞 ${clinic.phone}</div>` : ""}
+                          ${clinic?.whatsappNumber ? `<div class="detail-row">💬 WhatsApp: ${clinic.whatsappNumber}</div>` : ""}
+                          ${(clinic?.address || clinic?.city) ? `<div class="detail-row">📍 ${[clinic?.address, clinic?.city, clinic?.state, clinic?.pincode].filter(Boolean).join(", ")}</div>` : ""}
+                        </div>
+                        <div class="url-box">${bookingUrl}</div>
+                      </div>
+                      <script>window.onload = () => window.print();<\/script>
+                      </body></html>
+                    `);
+                    win.document.close();
+                  }}
+                  data-testid="btn-print-qr"
+                >
+                  🖨️ Print Poster
                 </Button>
               </CardFooter>
             </Card>
