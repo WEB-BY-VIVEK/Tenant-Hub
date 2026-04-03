@@ -1,0 +1,179 @@
+Build a complete production-ready multi-tenant SaaS platform for clinics, dentists, doctors, and hospitals.
+
+Project Name:
+Clinic Digital Growth SaaS Platform
+
+Tech Stack:
+Frontend: React.js + Tailwind CSS
+Backend: Node.js + Express.js
+Database: MongoDB Atlas Free Tier
+Authentication: JWT with role-based access
+Payment Gateway: Razorpay
+Deployment Ready: Vercel (frontend) + Render (backend)
+
+The UI must look premium, modern, healthcare focused, clean white and blue theme, mobile responsive, and suitable for real clients.
+
+========================
+MAIN FEATURES
+=============
+
+1. Landing Website
+   Create a premium landing page with:
+
+* hero section
+* pricing section
+* package cards
+* doctor testimonial section
+* WhatsApp floating button
+* contact form
+* Google Maps section
+* services section
+* clinic branding section
+
+2. Pricing Packages
+   Add these exact packages:
+
+A) Digital Growth Pack
+Price: ₹18,999
+Maintenance: ₹999/month starting from 2nd month
+Includes:
+
+* custom clinic website
+* QR patient booking
+* doctor dashboard
+* token management
+* admin access
+* branding
+
+B) Smart Booking Pack
+Price: ₹7,999
+Maintenance: ₹999/month starting from 2nd month
+Includes:
+
+* QR appointment booking
+* token generation
+* waiting list
+* dashboard
+
+C) Standalone Website
+Price: ₹12,999
+No monthly recharge
+Includes:
+
+* clinic website
+* services
+* contact
+* maps
+* branding
+
+3. Doctor Dashboard
+   Create secure login dashboard with:
+
+* today appointments
+* token queue
+* patient list
+* mark as completed
+* mark waiting
+* cancel / reschedule
+* total patients count
+* analytics cards
+* subscription status
+* expiry date
+* recharge now button
+
+4. Patient Booking System
+   Create patient booking flow:
+
+* QR code scan page
+* enter name
+* phone
+* date
+* time slot
+* reason
+* token number auto generated
+* confirmation page
+* success message
+
+5. Subscription Recharge System
+   Build full recharge and subscription module:
+
+* monthly recharge ₹999
+* quarterly recharge ₹2499
+* yearly recharge ₹9999
+
+Features:
+
+* active / expired status
+* expiry date
+* plan history
+* invoice history
+* recharge popup
+* auto dashboard lock on expiry
+* reactivation after payment
+
+6. Razorpay Payment Integration
+   Integrate full Razorpay payment gateway with:
+
+* UPI
+* cards
+* wallet
+* net banking
+* payment verification
+* payment success page
+* failed page
+* webhook endpoint
+* invoice generation
+
+7. Admin Panel (Super Admin)
+   Create separate admin panel for me with:
+
+* all clinics
+* all subscriptions
+* active / expired clients
+* monthly revenue
+* total patients
+* total doctors
+* plan upgrade
+* suspend clinic
+* analytics chart
+* revenue graph
+
+8. Database Models
+   Create MongoDB schemas for:
+
+* users
+* clinics
+* doctors
+* patients
+* appointments
+* tokens
+* subscriptions
+* payments
+* invoices
+* admins
+
+9. API Routes
+   Generate all backend routes:
+
+* auth
+* appointments
+* subscriptions
+* payments
+* admin
+* clinics
+* doctors
+
+10. Deployment
+    Project must be deployment-ready for:
+    Frontend → Vercel
+    Backend → Render
+    Database → MongoDB Atlas
+
+Use environment variables:
+MONGO_URI
+JWT_SECRET
+RAZORPAY_KEY_ID
+RAZORPAY_SECRET
+
+Generate complete project folder structure and all code files.
+Use scalable clean architecture.
