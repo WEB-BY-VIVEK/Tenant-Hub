@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useGetClinic, useUpdateClinic } from "@workspace/api-client-react";
 import { getGetClinicQueryKey } from "@workspace/api-client-react";
@@ -9,9 +9,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Loader2, Save, UserCircle, Building, Map } from "lucide-react";
+import { Loader2, Save, UserCircle, Building, Map, QrCode, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { QRCodeCanvas } from "qrcode.react";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Clinic name is required"),
@@ -30,6 +31,7 @@ export default function Settings() {
   const clinicId = user?.clinicId;
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const qrCanvasRef = useRef<HTMLDivElement | null>(null);
 
   const { data: clinic, isLoading: loadingClinic } = useGetClinic(clinicId || 0, { 
     query: { enabled: !!clinicId, queryKey: getGetClinicQueryKey(clinicId || 0) } 
@@ -67,6 +69,22 @@ export default function Settings() {
       });
     }
   }, [clinic, form]);
+
+  const bookingUrl = clinicId
+    ? `${window.location.origin}/book?clinicId=${clinicId}`
+    : "";
+
+  const handleDownloadQR = () => {
+    const container = qrCanvasRef.current;
+    if (!container) return;
+    const canvas = container.querySelector("canvas");
+    if (!canvas) return;
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${clinic?.name ?? "clinic"}-booking-qr.png`;
+    a.click();
+  };
 
   const onSubmit = (values: z.infer<typeof profileSchema>) => {
     if (!clinicId) return;
@@ -139,6 +157,44 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {bookingUrl && (
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <QrCode className="h-5 w-5 text-primary" />
+                  Reception QR Code
+                </CardTitle>
+                <CardDescription>
+                  Print and place this at your reception. Patients scan it to book instantly.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center gap-4">
+                <div className="p-3 bg-white rounded-lg border shadow-sm" ref={qrCanvasRef}>
+                  <QRCodeCanvas
+                    value={bookingUrl}
+                    size={180}
+                    level="H"
+                    includeMargin
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground text-center break-all px-2">
+                  {bookingUrl}
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleDownloadQR}
+                  data-testid="btn-download-qr"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download QR Code
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
         </div>
 
         <div className="md:col-span-2">
