@@ -89,7 +89,7 @@ export default function DashboardOverview() {
              </Badge>
           )}
           {(isSubExpired || isSubExpiringSoon) && (
-            <Link href="/dashboard/recharge">
+            <Link href="/recharge">
               <Button size="sm" variant={isSubExpired ? "default" : "outline"} data-testid="btn-renew-sub">
                 Renew Now
               </Button>
@@ -293,7 +293,7 @@ export default function DashboardOverview() {
                 )}
               </div>
               <div className="p-3 border-t bg-muted/20 text-center">
-                <Link href="/dashboard/appointments">
+                <Link href="/appointments">
                   <Button variant="link" size="sm" className="text-primary h-auto p-0">
                     View all appointments
                   </Button>
@@ -338,12 +338,12 @@ export default function DashboardOverview() {
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              <Link href="/dashboard/appointments" className="w-full">
+              <Link href="/appointments" className="w-full">
                 <Button variant="outline" className="w-full justify-start" data-testid="btn-quick-manage-appts">
                   <CalendarIcon className="mr-2 h-4 w-4" /> Manage Appointments
                 </Button>
               </Link>
-              <Link href="/dashboard/settings" className="w-full">
+              <Link href="/settings" className="w-full">
                 <Button variant="outline" className="w-full justify-start" data-testid="btn-quick-settings">
                   <Users className="mr-2 h-4 w-4" /> Clinic Settings
                 </Button>

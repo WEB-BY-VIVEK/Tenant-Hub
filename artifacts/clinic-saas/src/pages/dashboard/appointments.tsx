@@ -24,11 +24,11 @@ export default function Appointments() {
   
   const { data: appointments, isLoading } = useListAppointments({ 
     date: dateStr,
-    status: status || undefined,
+    status: status && status !== "all" ? status : undefined,
     patientName: search || undefined
   }, { 
     query: { 
-      queryKey: getListAppointmentsQueryKey({ date: dateStr, status: status || undefined, patientName: search || undefined }) 
+      queryKey: getListAppointmentsQueryKey({ date: dateStr, status: status && status !== "all" ? status : undefined, patientName: search || undefined }) 
     } 
   });
 
