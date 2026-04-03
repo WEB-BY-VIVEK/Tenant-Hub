@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { CheckCircle, Activity, Calendar, Clock, MapPin, Ticket, QrCode } from "lucide-react";
+import { CheckCircle, Activity, Calendar, Clock, MapPin, Ticket, QrCode, MessageCircle, Navigation, CalendarPlus, Phone } from "lucide-react";
 import type { BookingConfirmation } from "@workspace/api-client-react";
+import { useListPublicClinics } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -23,6 +24,9 @@ export default function BookSuccess() {
       setLocation("/book");
     }
   }, [setLocation]);
+
+  const { data: clinics } = useListPublicClinics();
+  const clinic = clinics?.find((c) => c.id === bookingData?.appointment?.clinicId);
 
   if (!bookingData) return null;
 
@@ -126,11 +130,64 @@ export default function BookSuccess() {
 
               <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Location</p>
-                <p className="font-medium">Clinic #{bookingData.appointment.clinicId}</p>
+                <p className="text-sm font-medium text-muted-foreground">Clinic</p>
+                <p className="font-medium">{clinic?.name ?? `Clinic #${bookingData.appointment.clinicId}`}</p>
+                {(clinic?.address || clinic?.city) && (
+                  <p className="text-sm text-muted-foreground">
+                    {[clinic?.address, clinic?.city, clinic?.state].filter(Boolean).join(", ")}
+                  </p>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Clinic Quick Actions */}
+          {clinic && (
+            <div className="mt-6 pt-4 border-t">
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-widest mb-3">
+                Clinic Contact
+              </h3>
+              <div className="grid grid-cols-1 gap-2">
+                {clinic.whatsappNumber && (
+                  <a
+                    href={`https://wa.me/${clinic.whatsappNumber.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button
+                      className="w-full bg-green-500 hover:bg-green-600 text-white gap-2"
+                      data-testid="btn-whatsapp-clinic"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      WhatsApp the Clinic
+                    </Button>
+                  </a>
+                )}
+                {clinic.phone && (
+                  <a href={`tel:${clinic.phone}`}>
+                    <Button variant="outline" className="w-full gap-2" data-testid="btn-call-clinic">
+                      <Phone className="h-4 w-4" />
+                      Call Clinic: {clinic.phone}
+                    </Button>
+                  </a>
+                )}
+                {clinic.googleMapsUrl && (
+                  <a href={clinic.googleMapsUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="w-full gap-2" data-testid="btn-directions">
+                      <Navigation className="h-4 w-4" />
+                      Get Directions
+                    </Button>
+                  </a>
+                )}
+                <Link href={`/book?clinic=${bookingData.appointment.clinicId}`} className="w-full">
+                  <Button variant="outline" className="w-full gap-2" data-testid="btn-book-again">
+                    <CalendarPlus className="h-4 w-4" />
+                    Book Another Appointment
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </CardContent>
 
         <CardFooter className="flex flex-col gap-3 px-6 pb-8 bg-muted/20 mt-4">
