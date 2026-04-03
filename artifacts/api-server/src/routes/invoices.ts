@@ -11,14 +11,9 @@ router.get("/invoices", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  if (req.user.role !== "super_admin" && req.user.clinicId == null) {
-    res.status(403).json({ error: "No clinic associated with your account" });
-    return;
-  }
-
   const clinicId = req.user.clinicId;
   if (clinicId == null) {
-    res.status(400).json({ error: "No clinic specified" });
+    res.status(403).json({ error: "No clinic associated with your account" });
     return;
   }
 

@@ -43,14 +43,22 @@ router.patch("/tokens/:tokenId/status", requireAuth, async (req, res): Promise<v
   }
 
   const { status } = req.body;
+  const validStatuses = ["waiting", "called", "completed", "skipped"] as const;
+  type TokenStatus = typeof validStatuses[number];
+  if (!status || !validStatuses.includes(status as TokenStatus)) {
+    res.status(400).json({ error: "Invalid status" });
+    return;
+  }
+
+  const typedStatus: TokenStatus = status as TokenStatus;
   const now = new Date();
 
-  const updateData: Record<string, any> = { status };
-  if (status === "called") updateData.calledAt = now;
-  if (status === "completed") updateData.completedAt = now;
+  const updatePayload: Partial<typeof tokensTable.$inferInsert> = { status: typedStatus };
+  if (typedStatus === "called") updatePayload.calledAt = now;
+  if (typedStatus === "completed") updatePayload.completedAt = now;
 
   const [updated] = await db.update(tokensTable)
-    .set(updateData)
+    .set(updatePayload)
     .where(eq(tokensTable.id, tokenId))
     .returning();
 

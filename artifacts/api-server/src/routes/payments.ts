@@ -101,7 +101,11 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
   }
 
   const typedPlan: SubscriptionPlan = plan as SubscriptionPlan;
-  const keySecret = process.env.RAZORPAY_SECRET ?? "";
+  const keySecret = process.env.RAZORPAY_SECRET;
+  if (!keySecret) {
+    res.status(503).json({ error: "Payment gateway not configured. Set RAZORPAY_SECRET." });
+    return;
+  }
 
   const expectedSignature = crypto
     .createHmac("sha256", keySecret)
