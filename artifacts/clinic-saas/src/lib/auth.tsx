@@ -1,9 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useGetMe, UserProfile, setAuthTokenGetter, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useGetMe, UserProfile, setAuthTokenGetter, setBaseUrl, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
 
 const TOKEN_KEY = "cdg_token";
+
+// When deployed separately (Vercel frontend + Render backend),
+// set VITE_API_BASE_URL to your Render backend URL e.g. https://cdg-api.onrender.com
+if (import.meta.env.VITE_API_BASE_URL) {
+  setBaseUrl(import.meta.env.VITE_API_BASE_URL);
+}
 
 setAuthTokenGetter(() => localStorage.getItem(TOKEN_KEY));
 
