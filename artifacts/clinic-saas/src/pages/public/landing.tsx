@@ -6,7 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, Star, MessageCircle, ArrowRight, Activity, Shield, Clock, CalendarDays, Mail, Phone, MapPin, Send } from "lucide-react";
+import { CheckCircle2, Star, ArrowRight, Activity, Shield, Clock, CalendarDays, Mail, Phone, MapPin, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -344,16 +344,6 @@ export default function Landing() {
         </section>
       </main>
       <SiteFooter />
-      {/* Floating WhatsApp Button */}
-      <a 
-        href="https://wa.me/919876543210" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 h-14 w-14 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 z-50"
-        data-testid="btn-whatsapp"
-      >
-        <MessageCircle className="h-6 w-6" />
-      </a>
     </div>
   );
 }
