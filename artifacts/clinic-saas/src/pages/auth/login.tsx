@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Activity, Loader2 } from "lucide-react";
+import { Activity, Loader2, ShieldCheck } from "lucide-react";
 import { useLogin } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -110,11 +110,23 @@ export default function Login() {
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="flex justify-center border-t p-4">
-            <div className="text-sm text-muted-foreground">
+          <CardFooter className="flex flex-col gap-3 border-t p-4">
+            <div className="text-sm text-muted-foreground text-center">
               Don't have an account?{" "}
               <Link href="/register" className="text-primary font-medium hover:underline" data-testid="link-to-register">
                 Register clinic
+              </Link>
+            </div>
+            <div className="w-full border-t pt-3">
+              <Link href="/admin-login">
+                <Button
+                  variant="outline"
+                  className="w-full border-slate-300 text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all gap-2"
+                  data-testid="btn-admin-access"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Admin Panel Login
+                </Button>
               </Link>
             </div>
           </CardFooter>

@@ -13,6 +13,7 @@ import BookSuccess from "@/pages/public/book-success";
 import TermsAndConditions from "@/pages/public/terms";
 import RefundPolicy from "@/pages/public/refund-policy";
 import Login from "@/pages/auth/login";
+import AdminLogin from "@/pages/auth/admin-login";
 import Register from "@/pages/auth/register";
 
 // Doctor Dashboard
@@ -48,6 +49,7 @@ function Router() {
       
       {/* Auth Routes */}
       <Route path="/login" component={Login} />
+      <Route path="/admin-login" component={AdminLogin} />
       <Route path="/register" component={Register} />
 
       {/* Doctor Dashboard Routes */}
