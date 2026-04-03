@@ -161,6 +161,13 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
 
 router.post("/payments/webhook", async (req, res): Promise<void> => {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const isDev = process.env.NODE_ENV === "development";
+
+  if (!webhookSecret && !isDev) {
+    res.status(503).json({ error: "Webhook secret not configured" });
+    return;
+  }
+
   if (webhookSecret) {
     const signature = req.headers["x-razorpay-signature"] as string;
     const body = JSON.stringify(req.body);

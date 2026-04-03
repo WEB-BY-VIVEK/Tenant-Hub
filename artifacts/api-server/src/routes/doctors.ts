@@ -101,7 +101,7 @@ router.get("/clinics/:clinicId/doctors/:doctorId", requireAuth, async (req, res)
     avatarUrl: usersTable.avatarUrl,
     clinicId: usersTable.clinicId,
     createdAt: usersTable.createdAt,
-  }).from(usersTable).where(and(eq(usersTable.id, doctorId), eq(usersTable.clinicId, clinicId)));
+  }).from(usersTable).where(and(eq(usersTable.id, doctorId), eq(usersTable.clinicId, clinicId), eq(usersTable.role, "doctor")));
 
   if (!doctor) {
     res.status(404).json({ error: "Doctor not found" });
