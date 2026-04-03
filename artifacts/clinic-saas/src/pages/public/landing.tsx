@@ -320,7 +320,7 @@ export default function Landing() {
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <MapPin className="h-4 w-4 text-primary" />
                     </div>
-                    <span>Andheri West, Mumbai, Maharashtra 400058</span>
+                    <span>Sector 62, Noida, Uttar Pradesh 201309</span>
                   </div>
                 </div>
               </div>
@@ -329,7 +329,7 @@ export default function Landing() {
               <div className="rounded-xl overflow-hidden border shadow-md h-[400px] lg:h-auto">
                 <iframe
                   title="Clinic Digital Growth Office Location"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3769.521996024487!2d72.83283177473823!3d19.13368938210516!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7b7b2a9b0e02d%3A0x4a56d6c2f7c91234!2sAndheri+West%2C+Mumbai%2C+Maharashtra!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
+                  src="https://maps.google.com/maps?q=Sector+62,+Noida,+Uttar+Pradesh,+India&t=&z=15&ie=UTF8&iwloc=&output=embed"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
