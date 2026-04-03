@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Clinic Digital Growth"
+version = "1.0.0"
+id = "artifacts/clinic-saas"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19826
+
+[services.development]
+run = "pnpm --filter @workspace/clinic-saas run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/clinic-saas", "run", "build" ]
+publicDir = "artifacts/clinic-saas/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19826"
+BASE_PATH = "/"
