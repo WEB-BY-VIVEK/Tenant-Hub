@@ -139,6 +139,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
+  await db.update(usersTable).set({ lastLoginAt: new Date() }).where(eq(usersTable.id, user.id));
+
   const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
   res.json({ token, user: formatUser(user) });
 });
