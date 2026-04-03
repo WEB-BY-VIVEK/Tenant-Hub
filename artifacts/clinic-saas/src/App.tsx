@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, ProtectedRoute } from "@/lib/auth";
 import { MainLayout } from "@/components/layout/main-layout";
+import { WhatsAppButton } from "@/components/whatsapp-button";
 
 // Pages
 import NotFound from "@/pages/not-found";
@@ -95,6 +96,7 @@ function App() {
           <AuthProvider>
             <Router />
           </AuthProvider>
+          <WhatsAppButton />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>
