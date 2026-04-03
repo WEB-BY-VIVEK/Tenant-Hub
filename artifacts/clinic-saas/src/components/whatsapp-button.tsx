@@ -1,8 +1,14 @@
+import { useLocation } from "wouter";
+
 const WHATSAPP_NUMBER = "919560990946";
 const PREFILLED_MESSAGE = "Hello Clinic Digital Growth, I am interested in your clinic website and QR booking system. Please share more details.";
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(PREFILLED_MESSAGE)}`;
 
+const HIDDEN_PATHS = ["/admin", "/dashboard"];
+
 export function WhatsAppButton() {
+  const [location] = useLocation();
+  if (HIDDEN_PATHS.some((p) => location.startsWith(p))) return null;
   return (
     <>
       <a
