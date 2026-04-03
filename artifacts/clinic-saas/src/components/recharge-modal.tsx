@@ -12,10 +12,13 @@ import {
   getGetCurrentSubscriptionQueryKey,
   getListInvoicesQueryKey,
   CreateOrderBodyPlan,
+  VerifyPaymentBodyPlan,
+  verifyPayment,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { openRazorpayCheckout } from "@/lib/razorpay";
 
 const PLANS: { plan: CreateOrderBodyPlan; label: string; price: string; duration: string; badge?: string }[] = [
   { plan: "monthly", label: "Monthly", price: "₹999", duration: "30 days" },
@@ -47,31 +50,46 @@ export function RechargeModal({ open, onOpenChange }: RechargeModalProps) {
     createOrder.mutate(
       { data: { plan } },
       {
-        onSuccess: (data) => {
-          setProcessing(null);
-          toast({
-            title: "Payment order created",
-            description: `Order ID: ${data.orderId}. Razorpay checkout coming soon.`,
-          });
-          queryClient.invalidateQueries({ queryKey: getGetCurrentSubscriptionQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getListInvoicesQueryKey() });
-          onOpenChange(false);
+        onSuccess: async (data) => {
+          try {
+            await openRazorpayCheckout({
+              keyId: data.keyId,
+              orderId: data.orderId,
+              amount: data.amount,
+              currency: data.currency,
+              description: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Subscription`,
+              onSuccess: async (response) => {
+                try {
+                  await verifyPayment({
+                    razorpayOrderId: response.razorpay_order_id,
+                    razorpayPaymentId: response.razorpay_payment_id,
+                    razorpaySignature: response.razorpay_signature,
+                    plan: plan as VerifyPaymentBodyPlan,
+                  });
+                  toast({ title: "Payment successful!", description: "Your subscription has been activated." });
+                  queryClient.invalidateQueries({ queryKey: getGetCurrentSubscriptionQueryKey() });
+                  queryClient.invalidateQueries({ queryKey: getListInvoicesQueryKey() });
+                  onOpenChange(false);
+                } catch {
+                  toast({ variant: "destructive", title: "Verification failed", description: "Payment received but verification failed. Please contact support." });
+                } finally {
+                  setProcessing(null);
+                }
+              },
+              onDismiss: () => setProcessing(null),
+            });
+          } catch {
+            setProcessing(null);
+            toast({ variant: "destructive", title: "Could not open payment", description: "Please try again." });
+          }
         },
         onError: (err) => {
           setProcessing(null);
           const errData = err.data as { error?: string } | null;
           if (err.status === 503) {
-            toast({
-              variant: "destructive",
-              title: "Payment gateway unavailable",
-              description: "Razorpay is not yet configured. Contact support.",
-            });
+            toast({ variant: "destructive", title: "Payment gateway unavailable", description: "Razorpay is not yet configured. Contact support." });
           } else {
-            toast({
-              variant: "destructive",
-              title: "Payment failed",
-              description: errData?.error || "Could not process payment order.",
-            });
+            toast({ variant: "destructive", title: "Payment failed", description: errData?.error || "Could not process payment order." });
           }
         },
       }
@@ -93,7 +111,6 @@ export function RechargeModal({ open, onOpenChange }: RechargeModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {/* Current Status Banner */}
         {currentSub && (
           <div className={`rounded-lg px-4 py-3 flex items-start gap-3 ${currentSub.isActive ? "bg-emerald-50 border border-emerald-200" : "bg-destructive/10 border border-destructive/20"}`}>
             {currentSub.isActive ? (
@@ -125,26 +142,18 @@ export function RechargeModal({ open, onOpenChange }: RechargeModalProps) {
           </div>
         )}
 
-        {/* Plan Selection */}
         <div>
           <p className="text-sm font-semibold text-foreground mb-3">
             {currentSub?.isActive ? "Extend / Change Plan" : "Choose a Plan"}
           </p>
           <div className="space-y-2">
             {PLANS.map(({ plan, label, price, duration, badge }) => (
-              <Card
-                key={plan}
-                className={`border-2 transition-colors ${plan === "yearly" ? "border-primary/40 bg-primary/5" : "border-border"}`}
-              >
+              <Card key={plan} className={`border-2 transition-colors ${plan === "yearly" ? "border-primary/40 bg-primary/5" : "border-border"}`}>
                 <CardContent className="p-4 flex items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">{label}</span>
-                      {badge && (
-                        <Badge variant="secondary" className="text-xs">
-                          {badge}
-                        </Badge>
-                      )}
+                      {badge && <Badge variant="secondary" className="text-xs">{badge}</Badge>}
                     </div>
                     <div className="text-sm text-muted-foreground">{duration}</div>
                   </div>
@@ -157,7 +166,7 @@ export function RechargeModal({ open, onOpenChange }: RechargeModalProps) {
                       variant={plan === "yearly" ? "default" : "outline"}
                       data-testid={`modal-btn-plan-${plan}`}
                     >
-                      {processing === plan ? <Loader2 className="h-4 w-4 animate-spin" /> : "Select"}
+                      {processing === plan ? <Loader2 className="h-4 w-4 animate-spin" /> : "Pay Now"}
                     </Button>
                   </div>
                 </CardContent>
@@ -166,7 +175,6 @@ export function RechargeModal({ open, onOpenChange }: RechargeModalProps) {
           </div>
         </div>
 
-        {/* Recent Invoices */}
         {recentInvoices.length > 0 && (
           <>
             <Separator />
@@ -176,10 +184,7 @@ export function RechargeModal({ open, onOpenChange }: RechargeModalProps) {
               </p>
               <div className="space-y-2">
                 {recentInvoices.map((invoice) => (
-                  <div
-                    key={invoice.id}
-                    className="flex items-center justify-between text-sm py-2 border-b last:border-0"
-                  >
+                  <div key={invoice.id} className="flex items-center justify-between text-sm py-2 border-b last:border-0">
                     <div>
                       <span className="font-medium">
                         {new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(invoice.amount)}
