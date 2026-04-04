@@ -42,7 +42,11 @@ function formatUser(user: typeof usersTable.$inferSelect) {
 router.post("/auth/admin-register", async (req, res): Promise<void> => {
   const { name, email, phone, password, secretKey } = req.body;
 
-  const ADMIN_SECRET = process.env.ADMIN_REGISTER_SECRET || "CDG-ADMIN-2024";
+  const ADMIN_SECRET = process.env.ADMIN_REGISTER_SECRET;
+  if (!ADMIN_SECRET) {
+    res.status(503).json({ error: "Admin registration is not enabled on this server." });
+    return;
+  }
 
   if (!name || !email || !phone || !password || !secretKey) {
     res.status(400).json({ error: "All fields including secret key are required" });
@@ -137,6 +141,11 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     res.status(401).json({ error: "Invalid credentials" });
+    return;
+  }
+
+  if (user.isActive !== "active") {
+    res.status(403).json({ error: "Your account has been deactivated. Please contact support." });
     return;
   }
 
@@ -284,7 +293,7 @@ router.post("/auth/reset-password", async (req, res) => {
     return;
   }
   const hashed = await bcrypt.hash(newPassword, 10);
-  await db.update(usersTable).set({ password: hashed }).where(eq(usersTable.email, email));
+  await db.update(usersTable).set({ passwordHash: hashed }).where(eq(usersTable.email, email));
   await db.update(otpVerificationsTable).set({ used: true }).where(eq(otpVerificationsTable.id, record.id));
   res.json({ message: "Password reset successfully." });
 });
@@ -321,18 +330,22 @@ router.post("/auth/google-signin", async (req, res) => {
     let [user] = await db.select().from(usersTable).where(eq(usersTable.email, verifiedEmail));
     if (!user) {
       const targetRole = role === "super_admin" ? "super_admin" : "doctor";
-      const randomPwd = await bcrypt.hash(Math.random().toString(36), 10);
+      const randomPwdHash = await bcrypt.hash(Math.random().toString(36), 10);
       const [newUser] = await db.insert(usersTable).values({
         email: verifiedEmail,
-        password: randomPwd,
+        passwordHash: randomPwdHash,
         name: googleName || verifiedEmail.split("@")[0],
+        phone: supabaseUser.phone || "google-oauth",
         role: targetRole,
       }).returning();
       user = newUser;
     }
-    const jwtSecret = process.env.JWT_SECRET || "default-secret";
-    const token = jwt.sign({ userId: user.id, role: user.role }, jwtSecret, { expiresIn: "7d" });
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+    if (user.isActive !== "active") {
+      res.status(403).json({ error: "Your account has been deactivated. Please contact support." });
+      return;
+    }
+    const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
+    res.json({ token, user: formatUser(user) });
   } catch (err) {
     console.error("Google signin error:", err);
     res.status(500).json({ error: "Google sign-in failed." });
