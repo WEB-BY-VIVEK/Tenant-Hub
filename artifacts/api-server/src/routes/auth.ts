@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { eq } from "drizzle-orm";
-import { db, usersTable, clinicsTable } from "@workspace/db";
+import { eq, and, gt } from "drizzle-orm";
+import { db, usersTable, clinicsTable, otpVerificationsTable } from "@workspace/db";
 import { requireAuth, type JwtPayload } from "../middlewares/auth";
+import { Resend } from "resend";
 
 const router: IRouter = Router();
 
@@ -175,6 +176,167 @@ router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
   }
 
   res.json(formatUser(user));
+});
+
+function generateOtp(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function sendOtpEmail(email: string, otp: string): Promise<void> {
+  const resendKey = process.env.RESEND_API_KEY;
+  if (resendKey) {
+    const resend = new Resend(resendKey);
+    await resend.emails.send({
+      from: "Clinic Digital Growth <noreply@vivekdigital.in>",
+      to: email,
+      subject: "Your Password Reset OTP",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;background:#f8fafc;border-radius:12px;">
+          <h2 style="color:#1e40af;margin-bottom:8px;">Password Reset Code</h2>
+          <p style="color:#475569;margin-bottom:24px;">Use the code below to reset your Clinic Digital Growth account password. This code expires in <strong>10 minutes</strong>.</p>
+          <div style="background:#fff;border:2px solid #e2e8f0;border-radius:10px;padding:24px;text-align:center;margin-bottom:24px;">
+            <span style="font-size:40px;font-weight:900;letter-spacing:10px;color:#1e40af;">${otp}</span>
+          </div>
+          <p style="color:#94a3b8;font-size:13px;">If you did not request this, please ignore this email.</p>
+        </div>
+      `,
+    });
+  } else {
+    console.log(`[OTP EMAIL - DEV MODE] To: ${email} | OTP: ${otp}`);
+  }
+}
+
+router.post("/auth/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    res.status(400).json({ error: "Email is required." });
+    return;
+  }
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  if (!user) {
+    res.json({ message: "If that email exists, an OTP has been sent." });
+    return;
+  }
+  const otp = generateOtp();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await db.insert(otpVerificationsTable).values({ email, otp, expiresAt });
+  try {
+    await sendOtpEmail(email, otp);
+  } catch (err) {
+    console.error("OTP email error:", err);
+  }
+  res.json({ message: "OTP sent successfully." });
+});
+
+router.post("/auth/verify-otp", async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    res.status(400).json({ error: "Email and OTP are required." });
+    return;
+  }
+  const now = new Date();
+  const [record] = await db
+    .select()
+    .from(otpVerificationsTable)
+    .where(
+      and(
+        eq(otpVerificationsTable.email, email),
+        eq(otpVerificationsTable.otp, otp),
+        eq(otpVerificationsTable.used, false),
+        gt(otpVerificationsTable.expiresAt, now)
+      )
+    )
+    .orderBy(otpVerificationsTable.createdAt)
+    .limit(1);
+  if (!record) {
+    res.status(400).json({ error: "Invalid or expired OTP. Please request a new one." });
+    return;
+  }
+  res.json({ message: "OTP verified." });
+});
+
+router.post("/auth/reset-password", async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  if (!email || !otp || !newPassword) {
+    res.status(400).json({ error: "Email, OTP and new password are required." });
+    return;
+  }
+  if (newPassword.length < 6) {
+    res.status(400).json({ error: "Password must be at least 6 characters." });
+    return;
+  }
+  const now = new Date();
+  const [record] = await db
+    .select()
+    .from(otpVerificationsTable)
+    .where(
+      and(
+        eq(otpVerificationsTable.email, email),
+        eq(otpVerificationsTable.otp, otp),
+        eq(otpVerificationsTable.used, false),
+        gt(otpVerificationsTable.expiresAt, now)
+      )
+    )
+    .orderBy(otpVerificationsTable.createdAt)
+    .limit(1);
+  if (!record) {
+    res.status(400).json({ error: "OTP expired or already used. Please restart the process." });
+    return;
+  }
+  const hashed = await bcrypt.hash(newPassword, 10);
+  await db.update(usersTable).set({ password: hashed }).where(eq(usersTable.email, email));
+  await db.update(otpVerificationsTable).set({ used: true }).where(eq(otpVerificationsTable.id, record.id));
+  res.json({ message: "Password reset successfully." });
+});
+
+router.post("/auth/google-signin", async (req, res) => {
+  const { accessToken, email: googleEmail, name: googleName, role } = req.body;
+  if (!accessToken || !googleEmail) {
+    res.status(400).json({ error: "Access token and email are required." });
+    return;
+  }
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    res.status(503).json({ error: "Google sign-in is not configured on this server." });
+    return;
+  }
+  try {
+    const verifyRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        apikey: supabaseAnonKey,
+      },
+    });
+    if (!verifyRes.ok) {
+      res.status(401).json({ error: "Invalid Google token." });
+      return;
+    }
+    const supabaseUser = await verifyRes.json();
+    const verifiedEmail = supabaseUser.email;
+    if (!verifiedEmail) {
+      res.status(400).json({ error: "Could not retrieve email from Google." });
+      return;
+    }
+    let [user] = await db.select().from(usersTable).where(eq(usersTable.email, verifiedEmail));
+    if (!user) {
+      const targetRole = role === "super_admin" ? "super_admin" : "doctor";
+      const randomPwd = await bcrypt.hash(Math.random().toString(36), 10);
+      const [newUser] = await db.insert(usersTable).values({
+        email: verifiedEmail,
+        password: randomPwd,
+        name: googleName || verifiedEmail.split("@")[0],
+        role: targetRole,
+      }).returning();
+      user = newUser;
+    }
+    const jwtSecret = process.env.JWT_SECRET || "default-secret";
+    const token = jwt.sign({ userId: user.id, role: user.role }, jwtSecret, { expiresIn: "7d" });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+  } catch (err) {
+    console.error("Google signin error:", err);
+    res.status(500).json({ error: "Google sign-in failed." });
+  }
 });
 
 export default router;

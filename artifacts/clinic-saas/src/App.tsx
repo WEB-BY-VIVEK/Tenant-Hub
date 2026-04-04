@@ -16,6 +16,7 @@ import RefundPolicy from "@/pages/public/refund-policy";
 import Login from "@/pages/auth/login";
 import AdminLogin from "@/pages/auth/admin-login";
 import Register from "@/pages/auth/register";
+import AuthCallback from "@/pages/auth/auth-callback";
 
 // Doctor Dashboard
 import DashboardOverview from "@/pages/dashboard/overview";
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/admin-login" component={AdminLogin} />
       <Route path="/register" component={Register} />
+      <Route path="/auth/callback" component={AuthCallback} />
 
       {/* Doctor Dashboard Routes */}
       <Route path="/dashboard" nest>
