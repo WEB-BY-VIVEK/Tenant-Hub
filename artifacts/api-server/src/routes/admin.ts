@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, sql, desc, and, gte, lte } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 import { db, clinicsTable, usersTable, appointmentsTable, subscriptionsTable, paymentsTable } from "@workspace/db";
 import { requireAuth, requireRole } from "../middlewares/auth";
 
@@ -132,26 +133,55 @@ router.get("/admin/admin-users", requireAuth, requireRole("super_admin"), async 
 
 router.patch("/admin/admin-users/:id/toggle-status", requireAuth, requireRole("super_admin"), async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
-  if (isNaN(id)) {
-    res.status(400).json({ error: "Invalid ID" });
-    return;
-  }
-
-  if (req.user?.userId === id) {
-    res.status(400).json({ error: "Cannot deactivate your own account" });
-    return;
-  }
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (req.user?.userId === id) { res.status(400).json({ error: "Cannot deactivate your own account" }); return; }
 
   const [existing] = await db.select().from(usersTable).where(eq(usersTable.id, id));
-  if (!existing) {
-    res.status(404).json({ error: "Admin not found" });
-    return;
-  }
+  if (!existing) { res.status(404).json({ error: "Admin not found" }); return; }
 
   const newStatus = existing.isActive === "active" ? "inactive" : "active";
   await db.update(usersTable).set({ isActive: newStatus }).where(eq(usersTable.id, id));
-
   res.json({ success: true, isActive: newStatus });
+});
+
+router.post("/admin/admin-users", requireAuth, requireRole("super_admin"), async (req, res): Promise<void> => {
+  const { name, email, phone, password } = req.body;
+  if (!name || !email || !password) {
+    res.status(400).json({ error: "Name, email and password are required" });
+    return;
+  }
+
+  const [existing] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  if (existing) {
+    res.status(400).json({ error: "An account with this email already exists" });
+    return;
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const [newAdmin] = await db.insert(usersTable).values({
+    name,
+    email,
+    phone: phone || "",
+    passwordHash: hashedPassword,
+    role: "super_admin",
+    isActive: "active",
+  }).returning();
+
+  const { passwordHash: _pw, ...safeAdmin } = newAdmin;
+  res.status(201).json(safeAdmin);
+});
+
+router.delete("/admin/admin-users/:id", requireAuth, requireRole("super_admin"), async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+  if (req.user?.userId === id) { res.status(400).json({ error: "Cannot remove your own account" }); return; }
+
+  const [existing] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+  if (!existing) { res.status(404).json({ error: "Admin not found" }); return; }
+  if (existing.role !== "super_admin") { res.status(403).json({ error: "Can only remove super_admin accounts" }); return; }
+
+  await db.delete(usersTable).where(eq(usersTable.id, id));
+  res.json({ success: true });
 });
 
 export default router;
