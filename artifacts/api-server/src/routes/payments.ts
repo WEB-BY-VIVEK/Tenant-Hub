@@ -267,7 +267,9 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
   logger.info({ event }, "Razorpay webhook received");
 
   if (event === "payment.failed") {
-    const entity = (payload?.payload as Record<string, unknown>)?.payment?.entity as Record<string, unknown> | undefined;
+    const payloadSection = payload?.payload as Record<string, unknown> | undefined;
+    const paymentSection = payloadSection?.payment as Record<string, unknown> | undefined;
+    const entity = paymentSection?.entity as Record<string, unknown> | undefined;
     const razorpayPaymentId = entity?.id as string | undefined;
     const failureReason = entity?.error_description as string | undefined;
     if (razorpayPaymentId) {
@@ -278,44 +280,53 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
   }
 
   if (event === "payment.captured") {
-    const entity = (payload?.payload as Record<string, unknown>)?.payment?.entity as Record<string, unknown> | undefined;
+    const payloadSection2 = payload?.payload as Record<string, unknown> | undefined;
+    const paymentSection2 = payloadSection2?.payment as Record<string, unknown> | undefined;
+    const entity = paymentSection2?.entity as Record<string, unknown> | undefined;
     const razorpayPaymentId = entity?.id as string | undefined;
     const razorpayOrderId = entity?.order_id as string | undefined;
     const notes = entity?.notes as Record<string, unknown> | undefined;
 
     if (razorpayPaymentId && razorpayOrderId) {
-      const [existingPayment] = await db
+      const rawPlan = (notes?.plan ?? "monthly") as string;
+      const plan: SubscriptionPlan = VALID_PLANS.includes(rawPlan as SubscriptionPlan)
+        ? (rawPlan as SubscriptionPlan)
+        : "monthly";
+
+      const [byPaymentId] = await db
         .select()
         .from(paymentsTable)
         .where(eq(paymentsTable.razorpayPaymentId, razorpayPaymentId))
         .limit(1);
 
-      if (existingPayment?.status === "success") {
+      if (byPaymentId?.status === "success") {
         res.json({ status: "ok" });
         return;
       }
 
-      if (existingPayment) {
-        const clinicId = existingPayment.clinicId;
-        const amountInr = existingPayment.amount;
-        const rawPlan = (notes?.plan ?? "monthly") as string;
-        const plan: SubscriptionPlan = VALID_PLANS.includes(rawPlan as SubscriptionPlan)
-          ? (rawPlan as SubscriptionPlan)
-          : "monthly";
+      const [byOrderId] = await db
+        .select()
+        .from(paymentsTable)
+        .where(eq(paymentsTable.razorpayOrderId, razorpayOrderId))
+        .limit(1);
+
+      if (byOrderId) {
+        if (byOrderId.status === "success") {
+          res.json({ status: "ok" });
+          return;
+        }
+        const clinicId = byOrderId.clinicId;
+        const amountInr = byOrderId.amount;
 
         await db.update(paymentsTable)
-          .set({ razorpayPaymentId, status: "pending" })
-          .where(eq(paymentsTable.id, existingPayment.id));
+          .set({ razorpayPaymentId })
+          .where(eq(paymentsTable.id, byOrderId.id));
 
-        await activateSubscription(clinicId, plan, amountInr, existingPayment.id);
+        await activateSubscription(clinicId, plan, amountInr, byOrderId.id);
       } else {
         const rawClinicId = notes?.clinic_id ? parseInt(String(notes.clinic_id)) : null;
         const amountPaise = entity?.amount as number | undefined;
         const amountInr = amountPaise ? Math.round(amountPaise / 100) : 0;
-        const rawPlan = (notes?.plan ?? "monthly") as string;
-        const plan: SubscriptionPlan = VALID_PLANS.includes(rawPlan as SubscriptionPlan)
-          ? (rawPlan as SubscriptionPlan)
-          : "monthly";
 
         if (rawClinicId && amountInr > 0) {
           const [newPayment] = await db.insert(paymentsTable).values({
@@ -336,7 +347,9 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
   }
 
   if (event === "refund.created") {
-    const entity = (payload?.payload as Record<string, unknown>)?.refund?.entity as Record<string, unknown> | undefined;
+    const payloadSection3 = payload?.payload as Record<string, unknown> | undefined;
+    const refundSection = payloadSection3?.refund as Record<string, unknown> | undefined;
+    const entity = refundSection?.entity as Record<string, unknown> | undefined;
     const razorpayPaymentId = entity?.payment_id as string | undefined;
     if (razorpayPaymentId) {
       await db.update(paymentsTable)

@@ -326,8 +326,8 @@ router.post("/auth/google-signin", async (req, res) => {
       res.status(401).json({ error: "Invalid Google token." });
       return;
     }
-    const supabaseUser = await verifyRes.json();
-    const verifiedEmail = supabaseUser.email;
+    const supabaseUser = await verifyRes.json() as Record<string, unknown>;
+    const verifiedEmail = supabaseUser.email as string | undefined;
     if (!verifiedEmail) {
       res.status(400).json({ error: "Could not retrieve email from Google." });
       return;

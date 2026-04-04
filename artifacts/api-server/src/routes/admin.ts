@@ -131,7 +131,8 @@ router.get("/admin/admin-users", requireAuth, requireRole("super_admin"), async 
 });
 
 router.patch("/admin/admin-users/:id/toggle-status", requireAuth, requireRole("super_admin"), async (req, res): Promise<void> => {
-  const id = parseInt(req.params.id);
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const id = parseInt(rawId);
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
     return;
