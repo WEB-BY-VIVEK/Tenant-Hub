@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { db, paymentsTable, subscriptionsTable, invoicesTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
 import { logger } from "../lib/logger";
@@ -122,7 +122,19 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
   const months = PLAN_MONTHS[typedPlan];
 
   const now = new Date();
-  const endDate = new Date(now);
+
+  const [existingActive] = await db
+    .select()
+    .from(subscriptionsTable)
+    .where(and(eq(subscriptionsTable.clinicId, clinicId), eq(subscriptionsTable.status, "active")))
+    .orderBy(desc(subscriptionsTable.endDate))
+    .limit(1);
+
+  const baseDate = existingActive && existingActive.endDate && existingActive.endDate > now
+    ? new Date(existingActive.endDate)
+    : now;
+
+  const endDate = new Date(baseDate);
   endDate.setMonth(endDate.getMonth() + months);
 
   const [subscription] = await db.insert(subscriptionsTable).values({
@@ -168,24 +180,51 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
     return;
   }
 
+  const rawBody = req.body as Buffer;
+
   if (webhookSecret) {
     const signature = req.headers["x-razorpay-signature"] as string;
-    const body = JSON.stringify(req.body);
-    const expected = crypto.createHmac("sha256", webhookSecret).update(body).digest("hex");
+    const expected = crypto.createHmac("sha256", webhookSecret).update(rawBody).digest("hex");
     if (signature !== expected) {
       res.status(400).json({ error: "Invalid webhook signature" });
       return;
     }
   }
 
-  const event = req.body?.event as string | undefined;
+  let payload: Record<string, unknown>;
+  try {
+    payload = JSON.parse(rawBody.toString()) as Record<string, unknown>;
+  } catch {
+    res.status(400).json({ error: "Invalid JSON payload" });
+    return;
+  }
+
+  const event = payload?.event as string | undefined;
   logger.info({ event }, "Razorpay webhook received");
 
   if (event === "payment.failed") {
-    const paymentId = req.body?.payload?.payment?.entity?.id as string | undefined;
+    const paymentId = (payload?.payload as Record<string, unknown>)?.payment?.entity?.id as string | undefined;
     if (paymentId) {
       await db.update(paymentsTable)
         .set({ status: "failed" })
+        .where(eq(paymentsTable.razorpayPaymentId, paymentId));
+    }
+  }
+
+  if (event === "payment.captured") {
+    const paymentId = (payload?.payload as Record<string, unknown>)?.payment?.entity?.id as string | undefined;
+    if (paymentId) {
+      await db.update(paymentsTable)
+        .set({ status: "success" })
+        .where(and(eq(paymentsTable.razorpayPaymentId, paymentId), eq(paymentsTable.status, "pending")));
+    }
+  }
+
+  if (event === "refund.created") {
+    const paymentId = (payload?.payload as Record<string, unknown>)?.refund?.entity?.payment_id as string | undefined;
+    if (paymentId) {
+      await db.update(paymentsTable)
+        .set({ status: "refunded" })
         .where(eq(paymentsTable.razorpayPaymentId, paymentId));
     }
   }
