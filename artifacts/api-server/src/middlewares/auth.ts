@@ -1,7 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { eq } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
 import { logger } from "../lib/logger";
 
 export interface JwtPayload {
@@ -39,33 +37,13 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
   const token = authHeader.substring(7);
 
-  let payload: JwtPayload;
   try {
-    payload = jwt.verify(token, secret) as JwtPayload;
+    const payload = jwt.verify(token, secret) as JwtPayload;
+    req.user = payload;
+    next();
   } catch {
     res.status(401).json({ error: "Invalid or expired token" });
-    return;
   }
-
-  db.select({ isActive: usersTable.isActive })
-    .from(usersTable)
-    .where(eq(usersTable.id, payload.userId))
-    .then(([user]) => {
-      if (!user) {
-        res.status(401).json({ error: "User not found" });
-        return;
-      }
-      if (user.isActive !== "active") {
-        res.status(403).json({ error: "Account deactivated" });
-        return;
-      }
-      req.user = payload;
-      next();
-    })
-    .catch((err) => {
-      logger.error({ err }, "requireAuth: DB lookup failed");
-      res.status(500).json({ error: "Internal server error" });
-    });
 }
 
 export function requireRole(...roles: JwtPayload["role"][]): (req: Request, res: Response, next: NextFunction) => void {

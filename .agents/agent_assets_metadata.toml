@@ -1,8 +1,0 @@
-uploads = []
-outputs = []
-
-[[generated]]
-id = "EPbl2ve0nKVU272fNNFM4"
-uri = "file://artifacts/clinic-saas/public/cover.png"
-type = "image"
-title = "generated_image"

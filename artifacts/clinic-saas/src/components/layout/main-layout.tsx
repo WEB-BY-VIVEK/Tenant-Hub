@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Calendar, BarChart3, CreditCard, Settings, Users, Activity, LogOut, AlertTriangle, MessageSquare, ShieldCheck, HelpCircle } from "lucide-react";
+import { LayoutDashboard, Calendar, BarChart3, CreditCard, Settings, Users, Activity, LogOut, AlertTriangle } from "lucide-react";
 import { useGetCurrentSubscription, getGetCurrentSubscriptionQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { RechargeModal } from "@/components/recharge-modal";
@@ -51,15 +51,11 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     { href: "/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/recharge", label: "Recharge", icon: CreditCard },
     { href: "/settings", label: "Settings", icon: Settings },
-    { href: "/help", label: "Help", icon: HelpCircle },
   ];
 
   const adminLinks = [
     { href: "/", label: "Overview", icon: Activity },
     { href: "/clinics", label: "Clinics", icon: Users },
-    { href: "/inquiries", label: "Inquiries", icon: MessageSquare },
-    { href: "/admins", label: "Admin Users", icon: ShieldCheck },
-    { href: "/help", label: "Help", icon: HelpCircle },
   ];
 
   const links = user?.role === "super_admin" ? adminLinks : doctorLinks;

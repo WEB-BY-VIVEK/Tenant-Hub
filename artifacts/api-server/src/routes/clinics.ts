@@ -39,11 +39,6 @@ router.get("/clinics/:clinicId", requireAuth, async (req, res): Promise<void> =>
   const raw = Array.isArray(req.params.clinicId) ? req.params.clinicId[0] : req.params.clinicId;
   const clinicId = parseInt(raw, 10);
 
-  if (isNaN(clinicId) || clinicId <= 0) {
-    res.status(400).json({ error: "Invalid clinic ID" });
-    return;
-  }
-
   const [clinic] = await db.select().from(clinicsTable).where(eq(clinicsTable.id, clinicId));
   if (!clinic) {
     res.status(404).json({ error: "Clinic not found" });

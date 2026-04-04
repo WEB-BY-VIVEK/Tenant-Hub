@@ -6,7 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, Star, ArrowRight, Activity, Shield, Clock, CalendarDays, Mail, Phone, MapPin, Send } from "lucide-react";
+import { CheckCircle2, Star, MessageCircle, ArrowRight, Activity, Shield, Clock, CalendarDays, Mail, Phone, MapPin, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -40,23 +40,14 @@ export default function Landing() {
   const testimonialsRef = useScrollReveal();
   const contactRef = useScrollReveal();
 
-  const handleContactSubmit = async (e: React.FormEvent) => {
+  const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
-    try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(contactForm),
-      });
-      if (!res.ok) throw new Error("Failed");
+    setTimeout(() => {
+      setSending(false);
       setContactForm({ name: "", phone: "", email: "", message: "" });
       toast({ title: "Message sent!", description: "We'll get back to you within 24 hours." });
-    } catch {
-      toast({ variant: "destructive", title: "Failed to send", description: "Please try again or WhatsApp us directly." });
-    } finally {
-      setSending(false);
-    }
+    }, 1000);
   };
 
   return (
@@ -65,6 +56,7 @@ export default function Landing() {
         .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
         .reveal.animate-in { opacity: 1; transform: translateY(0); }
       `}</style>
+
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -85,79 +77,44 @@ export default function Landing() {
           </div>
         </div>
       </header>
+
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white">
-          {/* Background glow */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
-          </div>
-
-          <div className="relative container mx-auto px-4 py-16 lg:py-24">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              {/* Left: Text & CTA */}
-              <div className="text-center lg:text-left">
-                <div className="inline-flex items-center gap-2 bg-blue-500/20 text-blue-300 px-4 py-2 rounded-full text-sm font-medium mb-6 border border-blue-400/30">
-                  <Activity className="h-4 w-4" /> Trusted by 500+ Indian Clinics
+        <section className="py-24 lg:py-32 bg-gradient-to-b from-primary/5 to-background">
+          <div className="container mx-auto px-4 text-center">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-8 border border-primary/20">
+              <Activity className="h-4 w-4" /> Trusted by 500+ Indian Clinics
+            </div>
+            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground max-w-4xl mx-auto mb-6 leading-tight">
+              Modernize Your Clinic.<br/>
+              <span className="text-primary">Streamline Patient Care.</span>
+            </h1>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+              The complete digital operating system for Indian clinics. Manage appointments, token queues, and patient records with a platform doctors trust.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/register">
+                <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-base" data-testid="btn-hero-start">
+                  Start Your Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/book">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-8 text-base" data-testid="btn-hero-demo">
+                  View Patient Experience
+                </Button>
+              </Link>
+            </div>
+            <div className="mt-16 grid grid-cols-3 gap-8 max-w-xl mx-auto text-center">
+              {[
+                { stat: "500+", label: "Clinics onboarded" },
+                { stat: "2L+", label: "Tokens issued" },
+                { stat: "40%", label: "Less wait time" },
+              ].map((s, i) => (
+                <div key={i}>
+                  <div className="text-3xl font-extrabold text-primary">{s.stat}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
                 </div>
-                <h1 className="text-4xl md:text-5xl xl:text-6xl font-extrabold tracking-tight leading-tight mb-6">
-                  Modernize Your Clinic.
-                  <br />
-                  <span className="text-blue-400">Streamline Patient Care.</span>
-                </h1>
-                <p className="text-lg text-slate-300 max-w-xl mb-10 leading-relaxed">
-                  The complete digital operating system for Indian clinics. Manage appointments, token queues, and patient records with a platform doctors trust.
-                </p>
-                <div className="flex flex-col sm:flex-row items-center lg:justify-start justify-center gap-4 mb-12">
-                  <Link href="/register">
-                    <Button size="lg" className="w-full sm:w-auto h-12 px-8 text-base bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/40" data-testid="btn-hero-start">
-                      Start Your Free Trial <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/book">
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto h-12 px-8 text-base border-slate-500 text-slate-200 hover:bg-white/10 hover:text-white" data-testid="btn-hero-demo">
-                      View Patient Experience
-                    </Button>
-                  </Link>
-                </div>
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-6 max-w-sm mx-auto lg:mx-0">
-                  {[
-                    { stat: "500+", label: "Clinics onboarded" },
-                    { stat: "2L+", label: "Tokens issued" },
-                    { stat: "40%", label: "Less wait time" },
-                  ].map((s, i) => (
-                    <div key={i} className="text-center lg:text-left">
-                      <div className="text-2xl font-extrabold text-blue-400">{s.stat}</div>
-                      <div className="text-xs text-slate-400 mt-0.5">{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Right: Cover Image */}
-              <div className="relative flex items-center justify-center">
-                <div className="relative w-full max-w-2xl">
-                  {/* Glow ring behind image */}
-                  <div className="absolute inset-0 rounded-2xl bg-blue-500/10 blur-2xl scale-105" />
-                  <img
-                    src="/cover.png"
-                    alt="Clinic Digital Growth Dashboard"
-                    className="relative w-full rounded-2xl shadow-2xl shadow-blue-900/50 border border-white/10"
-                  />
-                  {/* Floating badge: Online */}
-                  <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-white animate-pulse inline-block" />
-                    Live Dashboard
-                  </div>
-                  {/* Floating badge: Secure */}
-                  <div className="absolute -bottom-3 -left-3 bg-slate-800 border border-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
-                    <Shield className="h-3 w-3 text-blue-400" />
-                    Bank-grade Security
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
@@ -344,7 +301,7 @@ export default function Landing() {
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Phone className="h-4 w-4 text-primary" />
                     </div>
-                    <span>+91 9560990946 (Mon–Sat, 9 AM – 7 PM)</span>
+                    <span>+91 98765 43210 (Mon–Sat, 9 AM – 7 PM)</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -356,7 +313,7 @@ export default function Landing() {
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <MapPin className="h-4 w-4 text-primary" />
                     </div>
-                    <span>Sector 62, Noida, Uttar Pradesh 201309</span>
+                    <span>Andheri West, Mumbai, Maharashtra 400058</span>
                   </div>
                 </div>
               </div>
@@ -365,7 +322,7 @@ export default function Landing() {
               <div className="rounded-xl overflow-hidden border shadow-md h-[400px] lg:h-auto">
                 <iframe
                   title="Clinic Digital Growth Office Location"
-                  src="https://maps.google.com/maps?q=Sector+62,+Noida,+Uttar+Pradesh,+India&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3769.521996024487!2d72.83283177473823!3d19.13368938210516!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7b7b2a9b0e02d%3A0x4a56d6c2f7c91234!2sAndheri+West%2C+Mumbai%2C+Maharashtra!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -379,7 +336,19 @@ export default function Landing() {
           </div>
         </section>
       </main>
+
       <SiteFooter />
+
+      {/* Floating WhatsApp Button */}
+      <a 
+        href="https://wa.me/919876543210" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 h-14 w-14 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 z-50"
+        data-testid="btn-whatsapp"
+      >
+        <MessageCircle className="h-6 w-6" />
+      </a>
     </div>
   );
 }
