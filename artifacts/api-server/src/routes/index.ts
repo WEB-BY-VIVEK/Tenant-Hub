@@ -10,6 +10,7 @@ import paymentsRouter from "./payments";
 import invoicesRouter from "./invoices";
 import adminRouter from "./admin";
 import dashboardRouter from "./dashboard";
+import contactRouter from "./contact";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(paymentsRouter);
 router.use(invoicesRouter);
 router.use(adminRouter);
 router.use(dashboardRouter);
+router.use(contactRouter);
 
 export default router;

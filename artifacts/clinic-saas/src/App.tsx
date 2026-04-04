@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, ProtectedRoute } from "@/lib/auth";
 import { MainLayout } from "@/components/layout/main-layout";
+import { WhatsAppButton } from "@/components/whatsapp-button";
 
 // Pages
 import NotFound from "@/pages/not-found";
@@ -27,6 +28,9 @@ import Settings from "@/pages/dashboard/settings";
 import AdminOverview from "@/pages/admin/overview";
 import ClinicsList from "@/pages/admin/clinics";
 import ClinicDetail from "@/pages/admin/clinic-detail";
+import AdminInquiries from "@/pages/admin/inquiries";
+import AdminUsers from "@/pages/admin/admins";
+import HelpPage from "@/pages/dashboard/help";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +66,7 @@ function Router() {
               <Route path="/analytics" component={Analytics} />
               <Route path="/recharge" component={Recharge} />
               <Route path="/settings" component={Settings} />
+              <Route path="/help" component={HelpPage} />
               <Route component={NotFound} />
             </Switch>
           </MainLayout>
@@ -76,6 +81,9 @@ function Router() {
               <Route path="/" component={AdminOverview} />
               <Route path="/clinics" component={ClinicsList} />
               <Route path="/clinics/:clinicId" component={ClinicDetail} />
+              <Route path="/inquiries" component={AdminInquiries} />
+              <Route path="/admins" component={AdminUsers} />
+              <Route path="/help" component={HelpPage} />
               <Route component={NotFound} />
             </Switch>
           </MainLayout>
@@ -95,6 +103,7 @@ function App() {
           <AuthProvider>
             <Router />
           </AuthProvider>
+          <WhatsAppButton />
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

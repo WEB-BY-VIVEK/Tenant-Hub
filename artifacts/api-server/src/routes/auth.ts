@@ -38,6 +38,44 @@ function formatUser(user: typeof usersTable.$inferSelect) {
   };
 }
 
+router.post("/auth/admin-register", async (req, res): Promise<void> => {
+  const { name, email, phone, password, secretKey } = req.body;
+
+  const ADMIN_SECRET = process.env.ADMIN_REGISTER_SECRET || "CDG-ADMIN-2024";
+
+  if (!name || !email || !phone || !password || !secretKey) {
+    res.status(400).json({ error: "All fields including secret key are required" });
+    return;
+  }
+
+  if (secretKey !== ADMIN_SECRET) {
+    res.status(403).json({ error: "Invalid admin secret key" });
+    return;
+  }
+
+  const existing = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  if (existing.length > 0) {
+    res.status(409).json({ error: "Email already registered" });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  const [user] = await db.insert(usersTable).values({
+    name,
+    email,
+    phone,
+    passwordHash,
+    role: "super_admin",
+    clinicId: null,
+  }).returning();
+
+  req.log.info({ userId: user.id }, "New super_admin registered");
+
+  const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
+  res.status(201).json({ token, user: formatUser(user) });
+});
+
 router.post("/auth/register", async (req, res): Promise<void> => {
   const { name, email, phone, password, clinicName, clinicAddress, clinicCity } = req.body;
 
@@ -100,6 +138,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Invalid credentials" });
     return;
   }
+
+  await db.update(usersTable).set({ lastLoginAt: new Date() }).where(eq(usersTable.id, user.id));
 
   const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
   res.json({ token, user: formatUser(user) });

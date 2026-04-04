@@ -105,4 +105,53 @@ router.get("/admin/revenue", requireAuth, requireRole("super_admin"), async (req
   res.json(result);
 });
 
+router.get("/admin/admin-users", requireAuth, requireRole("super_admin"), async (req, res): Promise<void> => {
+  const admins = await db.select({
+    id: usersTable.id,
+    name: usersTable.name,
+    email: usersTable.email,
+    phone: usersTable.phone,
+    role: usersTable.role,
+    isActive: usersTable.isActive,
+    lastLoginAt: usersTable.lastLoginAt,
+    createdAt: usersTable.createdAt,
+  }).from(usersTable)
+    .where(eq(usersTable.role, "super_admin"))
+    .orderBy(desc(usersTable.createdAt));
+
+  const now = new Date();
+  const result = admins.map((admin) => {
+    const lastLogin = admin.lastLoginAt ? new Date(admin.lastLoginAt) : null;
+    const minutesSinceLogin = lastLogin ? (now.getTime() - lastLogin.getTime()) / (1000 * 60) : null;
+    const isOnline = minutesSinceLogin !== null && minutesSinceLogin <= 15;
+    return { ...admin, isOnline };
+  });
+
+  res.json(result);
+});
+
+router.patch("/admin/admin-users/:id/toggle-status", requireAuth, requireRole("super_admin"), async (req, res): Promise<void> => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  if (req.user?.userId === id) {
+    res.status(400).json({ error: "Cannot deactivate your own account" });
+    return;
+  }
+
+  const [existing] = await db.select().from(usersTable).where(eq(usersTable.id, id));
+  if (!existing) {
+    res.status(404).json({ error: "Admin not found" });
+    return;
+  }
+
+  const newStatus = existing.isActive === "active" ? "inactive" : "active";
+  await db.update(usersTable).set({ isActive: newStatus }).where(eq(usersTable.id, id));
+
+  res.json({ success: true, isActive: newStatus });
+});
+
 export default router;
