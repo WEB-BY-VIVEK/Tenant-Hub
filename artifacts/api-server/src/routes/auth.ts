@@ -41,7 +41,11 @@ function formatUser(user: typeof usersTable.$inferSelect) {
 router.post("/auth/admin-register", async (req, res): Promise<void> => {
   const { name, email, phone, password, secretKey } = req.body;
 
-  const ADMIN_SECRET = process.env.ADMIN_REGISTER_SECRET || "CDG-ADMIN-2024";
+  const ADMIN_SECRET = process.env.ADMIN_REGISTER_SECRET;
+  if (!ADMIN_SECRET) {
+    res.status(503).json({ error: "Admin registration is not configured on this server" });
+    return;
+  }
 
   if (!name || !email || !phone || !password || !secretKey) {
     res.status(400).json({ error: "All fields including secret key are required" });
@@ -139,6 +143,11 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
 
+  if (user.isActive !== "active") {
+    res.status(403).json({ error: "Your account has been deactivated. Please contact support." });
+    return;
+  }
+
   await db.update(usersTable).set({ lastLoginAt: new Date() }).where(eq(usersTable.id, user.id));
 
   const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
@@ -157,6 +166,11 @@ router.post("/auth/refresh", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  if (user.isActive !== "active") {
+    res.status(403).json({ error: "Account deactivated" });
+    return;
+  }
+
   const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
   res.json({ token, user: formatUser(user) });
 });
@@ -171,6 +185,11 @@ router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
 
   if (!user) {
     res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  if (user.isActive !== "active") {
+    res.status(403).json({ error: "Account deactivated" });
     return;
   }
 
