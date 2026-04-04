@@ -15,6 +15,13 @@ interface RazorpayOptions {
   prefill?: { name?: string; email?: string; contact?: string };
   theme?: { color?: string };
   modal?: { ondismiss?: () => void };
+  config?: {
+    display?: {
+      blocks?: Record<string, { name: string; instruments: { method: string; flows?: string[] }[] }>;
+      sequence?: string[];
+      preferences?: { show_default_blocks?: boolean };
+    };
+  };
 }
 
 interface RazorpayInstance {
@@ -47,7 +54,6 @@ export async function openRazorpayCheckout(options: {
   amount: number;
   currency: string;
   description: string;
-  clinicName?: string;
   onSuccess: (response: RazorpayResponse) => void;
   onDismiss?: () => void;
 }): Promise<void> {
@@ -63,6 +69,28 @@ export async function openRazorpayCheckout(options: {
     handler: options.onSuccess,
     theme: { color: "#2563eb" },
     modal: { ondismiss: options.onDismiss },
+    config: {
+      display: {
+        blocks: {
+          upi_block: {
+            name: "Pay via UPI",
+            instruments: [
+              { method: "upi", flows: ["collect", "intent", "qr"] },
+            ],
+          },
+          other: {
+            name: "Other Payment Methods",
+            instruments: [
+              { method: "card" },
+              { method: "netbanking" },
+              { method: "wallet" },
+            ],
+          },
+        },
+        sequence: ["block.upi_block", "block.other"],
+        preferences: { show_default_blocks: false },
+      },
+    },
   });
 
   rzp.open();
