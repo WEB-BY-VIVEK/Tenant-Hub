@@ -213,7 +213,7 @@ const FAQ = [
   },
   {
     q: "How do I register a new admin account?",
-    a: "Go to /admin-login and click the Register tab. Fill in your details and enter the Admin Secret Key (CDG-ADMIN-2024). Your account will be created and you will be logged in automatically.",
+    a: "Super admin accounts are provisioned by the platform team. Please contact Vivek Digital Clinic Solutions support to request a new admin account. For security reasons, admin registration requires a server-side secret key that is not shared publicly.",
     roles: ["super_admin"],
   },
   {
