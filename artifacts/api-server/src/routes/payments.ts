@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, gt } from "drizzle-orm";
 import { db, paymentsTable, subscriptionsTable, invoicesTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
 import { logger } from "../lib/logger";
@@ -212,11 +212,80 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
   }
 
   if (event === "payment.captured") {
-    const paymentId = (payload?.payload as Record<string, unknown>)?.payment?.entity?.id as string | undefined;
-    if (paymentId) {
-      await db.update(paymentsTable)
-        .set({ status: "success" })
-        .where(and(eq(paymentsTable.razorpayPaymentId, paymentId), eq(paymentsTable.status, "pending")));
+    const entity = (payload?.payload as Record<string, unknown>)?.payment?.entity as Record<string, unknown> | undefined;
+    const paymentId = entity?.id as string | undefined;
+    const orderId = entity?.order_id as string | undefined;
+    if (paymentId && orderId) {
+      const [existingPayment] = await db
+        .select()
+        .from(paymentsTable)
+        .where(eq(paymentsTable.razorpayPaymentId, paymentId))
+        .limit(1);
+
+      if (existingPayment) {
+        if (existingPayment.status === "pending") {
+          await db.update(paymentsTable)
+            .set({ status: "success" })
+            .where(eq(paymentsTable.razorpayPaymentId, paymentId));
+
+          if (existingPayment.subscriptionId) {
+            await db.update(subscriptionsTable)
+              .set({ status: "active" })
+              .where(eq(subscriptionsTable.id, existingPayment.subscriptionId));
+          }
+        }
+      } else {
+        const clinicIdFromPayment = entity?.notes?.clinic_id
+          ? parseInt(String(entity.notes.clinic_id))
+          : null;
+        const amountPaise = entity?.amount as number | undefined;
+        const amountInr = amountPaise ? Math.round(amountPaise / 100) : 0;
+
+        if (clinicIdFromPayment && amountInr > 0) {
+          const now = new Date();
+          const [newPayment] = await db.insert(paymentsTable).values({
+            clinicId: clinicIdFromPayment,
+            razorpayOrderId: orderId,
+            razorpayPaymentId: paymentId,
+            amount: amountInr,
+            currency: "INR",
+            status: "success",
+          }).returning();
+
+          const [existingActive] = await db
+            .select()
+            .from(subscriptionsTable)
+            .where(and(eq(subscriptionsTable.clinicId, clinicIdFromPayment), eq(subscriptionsTable.status, "active")))
+            .orderBy(desc(subscriptionsTable.endDate))
+            .limit(1);
+
+          const baseDate = existingActive?.endDate && existingActive.endDate > now
+            ? new Date(existingActive.endDate)
+            : now;
+          const endDate = new Date(baseDate);
+          endDate.setMonth(endDate.getMonth() + 1);
+
+          const [sub] = await db.insert(subscriptionsTable).values({
+            clinicId: clinicIdFromPayment,
+            plan: "monthly",
+            status: "active",
+            startDate: now,
+            endDate,
+            amount: amountInr,
+          }).returning();
+
+          await db.insert(invoicesTable).values({
+            invoiceNumber: generateInvoiceNumber(),
+            clinicId: clinicIdFromPayment,
+            paymentId: newPayment.id,
+            subscriptionId: sub.id,
+            amount: amountInr,
+            currency: "INR",
+            description: "subscription recharge (webhook)",
+            issuedAt: now,
+          });
+        }
+      }
     }
   }
 
