@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { db, appointmentsTable, tokensTable, clinicsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
-import { requireActiveSubscription } from "../middlewares/subscription";
+import { requireActiveSubscription, checkClinicSubscription } from "../middlewares/subscription";
 import type { appointmentStatusEnum } from "@workspace/db";
 
 type AppointmentStatus = typeof appointmentStatusEnum.enumValues[number];
@@ -35,6 +35,12 @@ router.post("/appointments/book", async (req, res): Promise<void> => {
 
   if (clinic.isSuspended) {
     res.status(403).json({ error: "Clinic is currently suspended" });
+    return;
+  }
+
+  const hasActiveSub = await checkClinicSubscription(clinicId);
+  if (!hasActiveSub) {
+    res.status(403).json({ error: "This clinic's subscription has expired. Please contact the clinic directly." });
     return;
   }
 

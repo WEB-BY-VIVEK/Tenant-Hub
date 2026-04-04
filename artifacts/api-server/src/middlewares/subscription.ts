@@ -3,6 +3,11 @@ import { eq, and, gt } from "drizzle-orm";
 import { db, subscriptionsTable } from "@workspace/db";
 
 export async function requireActiveSubscription(req: Request, res: Response, next: NextFunction): Promise<void> {
+  if (req.user?.role === "super_admin") {
+    next();
+    return;
+  }
+
   if (!req.user?.clinicId) {
     res.status(403).json({ error: "No clinic associated with your account" });
     return;
@@ -27,4 +32,20 @@ export async function requireActiveSubscription(req: Request, res: Response, nex
   }
 
   next();
+}
+
+export async function checkClinicSubscription(clinicId: number): Promise<boolean> {
+  const now = new Date();
+  const [activeSub] = await db
+    .select()
+    .from(subscriptionsTable)
+    .where(
+      and(
+        eq(subscriptionsTable.clinicId, clinicId),
+        eq(subscriptionsTable.status, "active"),
+        gt(subscriptionsTable.endDate, now)
+      )
+    )
+    .limit(1);
+  return !!activeSub;
 }
