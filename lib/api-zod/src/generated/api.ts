@@ -93,8 +93,13 @@ export const GetMeResponse = zod.object({
 export const ListPublicClinicsResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
+  slug: zod.string(),
+  phone: zod.string(),
   city: zod.string().nullish(),
+  state: zod.string().nullish(),
   address: zod.string().nullish(),
+  whatsappNumber: zod.string().nullish(),
+  googleMapsUrl: zod.string().nullish(),
 });
 export const ListPublicClinicsResponse = zod.array(
   ListPublicClinicsResponseItem,

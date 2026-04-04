@@ -43,6 +43,7 @@ export function OtpModal({ open, onOpenChange }: OtpModalProps) {
       const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [resendCooldown]);
 
   useEffect(() => {

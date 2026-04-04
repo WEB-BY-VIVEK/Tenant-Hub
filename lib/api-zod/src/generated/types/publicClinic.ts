@@ -9,8 +9,16 @@
 export interface PublicClinic {
   id: number;
   name: string;
+  slug: string;
+  phone: string;
   /** @nullable */
   city?: string | null;
   /** @nullable */
+  state?: string | null;
+  /** @nullable */
   address?: string | null;
+  /** @nullable */
+  whatsappNumber?: string | null;
+  /** @nullable */
+  googleMapsUrl?: string | null;
 }
