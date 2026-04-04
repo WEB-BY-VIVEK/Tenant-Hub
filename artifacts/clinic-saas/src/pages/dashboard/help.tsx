@@ -213,7 +213,7 @@ const FAQ = [
   },
   {
     q: "How do I register a new admin account?",
-    a: "Go to /admin-login and click the Register tab. Fill in your details and enter the Admin Secret Key (CDG-ADMIN-2024). Your account will be created and you will be logged in automatically.",
+    a: "Go to /admin-login and click the Register tab. Fill in your details and enter the Admin Secret Key provided by your system administrator. Your account will be created and you will be logged in automatically.",
     roles: ["super_admin"],
   },
   {

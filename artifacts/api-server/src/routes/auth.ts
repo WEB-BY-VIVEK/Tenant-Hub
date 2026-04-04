@@ -167,6 +167,11 @@ router.post("/auth/refresh", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  if (user.isActive !== "active") {
+    res.status(403).json({ error: "Your account has been deactivated. Please contact support." });
+    return;
+  }
+
   const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
   res.json({ token, user: formatUser(user) });
 });
@@ -327,22 +332,19 @@ router.post("/auth/google-signin", async (req, res) => {
       res.status(400).json({ error: "Could not retrieve email from Google." });
       return;
     }
-    let [user] = await db.select().from(usersTable).where(eq(usersTable.email, verifiedEmail));
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.email, verifiedEmail));
     if (!user) {
-      const randomPwdHash = await bcrypt.hash(Math.random().toString(36), 10);
-      const [newUser] = await db.insert(usersTable).values({
-        email: verifiedEmail,
-        passwordHash: randomPwdHash,
-        name: googleName || verifiedEmail.split("@")[0],
-        phone: supabaseUser.phone || "google-oauth",
-        role: "doctor",
-      }).returning();
-      user = newUser;
+      res.status(404).json({
+        error: "No account found for this Google email. Please register your clinic first, then link Google sign-in.",
+        code: "USER_NOT_FOUND",
+      });
+      return;
     }
     if (user.isActive !== "active") {
       res.status(403).json({ error: "Your account has been deactivated. Please contact support." });
       return;
     }
+    await db.update(usersTable).set({ lastLoginAt: new Date() }).where(eq(usersTable.id, user.id));
     const token = signToken({ userId: user.id, email: user.email, role: user.role, clinicId: user.clinicId });
     res.json({ token, user: formatUser(user) });
   } catch (err) {

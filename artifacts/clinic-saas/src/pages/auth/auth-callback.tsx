@@ -37,7 +37,11 @@ export default function AuthCallback() {
 
         const data = await res.json();
         if (!res.ok) {
-          setError(data.error || "Google sign-in failed on the server.");
+          if (data.code === "USER_NOT_FOUND") {
+            setError("No account found for this Google email. Please register your clinic first using email/password, then you can sign in with Google.");
+          } else {
+            setError(data.error || "Google sign-in failed on the server.");
+          }
           return;
         }
 
