@@ -72,7 +72,7 @@ router.post("/appointments/book", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/appointments", requireAuth, async (req, res): Promise<void> => {
+router.get("/appointments", requireAuth, requireActiveSubscription, async (req, res): Promise<void> => {
   if (!req.user) {
     res.status(401).json({ error: "Unauthorized" });
     return;
