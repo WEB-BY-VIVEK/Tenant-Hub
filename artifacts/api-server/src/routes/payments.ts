@@ -1,10 +1,14 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import crypto from "crypto";
 import { eq, desc } from "drizzle-orm";
 import { db, paymentsTable, subscriptionsTable, invoicesTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
 import { logger } from "../lib/logger";
 import type { subscriptionPlanEnum } from "@workspace/db";
+
+interface RawBodyRequest extends Request {
+  rawBody?: Buffer;
+}
 
 type SubscriptionPlan = typeof subscriptionPlanEnum.enumValues[number];
 
@@ -122,14 +126,30 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
   const months = PLAN_MONTHS[typedPlan];
 
   const now = new Date();
-  const endDate = new Date(now);
+
+  const [existingActiveSub] = await db
+    .select()
+    .from(subscriptionsTable)
+    .where(eq(subscriptionsTable.clinicId, clinicId))
+    .orderBy(desc(subscriptionsTable.endDate))
+    .limit(1);
+
+  const baseDate =
+    existingActiveSub &&
+    existingActiveSub.status === "active" &&
+    existingActiveSub.endDate &&
+    new Date(existingActiveSub.endDate) > now
+      ? new Date(existingActiveSub.endDate)
+      : now;
+
+  const endDate = new Date(baseDate);
   endDate.setMonth(endDate.getMonth() + months);
 
   const [subscription] = await db.insert(subscriptionsTable).values({
     clinicId,
     plan: typedPlan,
     status: "active",
-    startDate: now,
+    startDate: baseDate,
     endDate,
     amount: amountInr,
   }).returning();
@@ -159,7 +179,7 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
   res.json({ success: true, payment, subscription, invoice });
 });
 
-router.post("/payments/webhook", async (req, res): Promise<void> => {
+router.post("/payments/webhook", async (req: RawBodyRequest, res): Promise<void> => {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
   const isDev = process.env.NODE_ENV === "development";
 
@@ -170,8 +190,12 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
 
   if (webhookSecret) {
     const signature = req.headers["x-razorpay-signature"] as string;
-    const body = JSON.stringify(req.body);
-    const expected = crypto.createHmac("sha256", webhookSecret).update(body).digest("hex");
+    const rawPayload = req.rawBody;
+    if (!rawPayload) {
+      res.status(400).json({ error: "Missing request body" });
+      return;
+    }
+    const expected = crypto.createHmac("sha256", webhookSecret).update(rawPayload).digest("hex");
     if (signature !== expected) {
       res.status(400).json({ error: "Invalid webhook signature" });
       return;

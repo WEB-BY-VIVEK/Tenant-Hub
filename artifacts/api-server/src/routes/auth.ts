@@ -39,6 +39,11 @@ function formatUser(user: typeof usersTable.$inferSelect) {
 }
 
 router.post("/auth/admin-register", async (req, res): Promise<void> => {
+  if (process.env.NODE_ENV === "production") {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
   const { name, email, phone, password, secretKey } = req.body;
 
   const ADMIN_SECRET = process.env.ADMIN_REGISTER_SECRET;
