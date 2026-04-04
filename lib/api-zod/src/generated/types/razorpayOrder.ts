@@ -12,5 +12,4 @@ export interface RazorpayOrder {
   currency: string;
   plan: string;
   keyId: string;
-  internalPaymentId: number;
 }

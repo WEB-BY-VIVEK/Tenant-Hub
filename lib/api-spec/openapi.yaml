@@ -1006,25 +1006,13 @@ components:
           type: integer
         name:
           type: string
-        slug:
-          type: string
-        phone:
-          type: string
         city:
           type: ["string", "null"]
-        state:
-          type: ["string", "null"]
         address:
-          type: ["string", "null"]
-        whatsappNumber:
-          type: ["string", "null"]
-        googleMapsUrl:
           type: ["string", "null"]
       required:
         - id
         - name
-        - slug
-        - phone
 
     Clinic:
       type: object
@@ -1514,15 +1502,12 @@ components:
           type: string
         keyId:
           type: string
-        internalPaymentId:
-          type: integer
       required:
         - orderId
         - amount
         - currency
         - plan
         - keyId
-        - internalPaymentId
 
     VerifyPaymentBody:
       type: object
@@ -1533,13 +1518,14 @@ components:
           type: string
         razorpaySignature:
           type: string
-        internalPaymentId:
-          type: integer
+        plan:
+          type: string
+          enum: [monthly, quarterly, yearly]
       required:
         - razorpayOrderId
         - razorpayPaymentId
         - razorpaySignature
-        - internalPaymentId
+        - plan
 
     PaymentVerificationResponse:
       type: object

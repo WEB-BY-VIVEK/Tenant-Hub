@@ -12,6 +12,7 @@ import {
   getGetCurrentSubscriptionQueryKey,
   getListInvoicesQueryKey,
   CreateOrderBodyPlan,
+  VerifyPaymentBodyPlan,
   verifyPayment,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
@@ -63,7 +64,7 @@ export function RechargeModal({ open, onOpenChange }: RechargeModalProps) {
                     razorpayOrderId: response.razorpay_order_id,
                     razorpayPaymentId: response.razorpay_payment_id,
                     razorpaySignature: response.razorpay_signature,
-                    internalPaymentId: data.internalPaymentId,
+                    plan: plan as VerifyPaymentBodyPlan,
                   });
                   toast({ title: "Payment successful!", description: "Your subscription has been activated." });
                   queryClient.invalidateQueries({ queryKey: getGetCurrentSubscriptionQueryKey() });

@@ -94,15 +94,6 @@ The frontend uses Wouter v3 with the `nest` prop for sub-sections:
 - `GET /admin/stats`, `GET /admin/clinics`
 - `GET /invoices`
 
-## Authentication
-
-- **Doctor Login** (`/login`): Premium white/blue split layout. Google OAuth + email/password + Forgot Password.
-- **Admin Login** (`/admin-login`): Dark navy layout. Google OAuth + email/password + Forgot Password + Register tab.
-- **Auth Callback** (`/auth/callback`): Handles Google OAuth redirect, exchanges Supabase token for custom JWT.
-- **Forgot Password**: OTP modal (6-digit, 10-min expiry). Backend: `POST /api/auth/forgot-password` → `POST /api/auth/verify-otp` → `POST /api/auth/reset-password`.
-- **OTP email**: Sent via Resend (`RESEND_API_KEY`). Without key, OTP is printed to server console (dev mode).
-- **Google OAuth**: Via Supabase. Requires `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (frontend) + `SUPABASE_URL`, `SUPABASE_ANON_KEY` (backend).
-
 ## Environment Variables
 
 | Key | Required | Notes |
@@ -113,11 +104,6 @@ The frontend uses Wouter v3 with the `nest` prop for sub-sections:
 | `DATABASE_URL` | Auto | Managed by Replit Helium DB |
 | `PORT` | Auto | Per-artifact port assigned by Replit |
 | `BASE_PATH` | Auto | Vite base path (e.g., `/`) |
-| `RESEND_API_KEY` | Optional | For OTP emails (dev mode: console log if missing) |
-| `VITE_SUPABASE_URL` | Optional | Required for Google OAuth (frontend) |
-| `VITE_SUPABASE_ANON_KEY` | Optional | Required for Google OAuth (frontend) |
-| `SUPABASE_URL` | Optional | Required for Google OAuth (backend) |
-| `SUPABASE_ANON_KEY` | Optional | Required for Google OAuth (backend) |
 
 ## API Client Usage
 

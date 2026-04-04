@@ -2,7 +2,6 @@ import { Router, type IRouter } from "express";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { db, appointmentsTable, tokensTable, clinicsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
-import { requireActiveSubscription, checkClinicSubscription } from "../middlewares/subscription";
 import type { appointmentStatusEnum } from "@workspace/db";
 
 type AppointmentStatus = typeof appointmentStatusEnum.enumValues[number];
@@ -38,12 +37,6 @@ router.post("/appointments/book", async (req, res): Promise<void> => {
     return;
   }
 
-  const hasActiveSub = await checkClinicSubscription(clinicId);
-  if (!hasActiveSub) {
-    res.status(403).json({ error: "This clinic's subscription has expired. Please contact the clinic directly." });
-    return;
-  }
-
   const [appointment] = await db.insert(appointmentsTable).values({
     clinicId,
     patientName,
@@ -72,7 +65,7 @@ router.post("/appointments/book", async (req, res): Promise<void> => {
   });
 });
 
-router.get("/appointments", requireAuth, requireActiveSubscription, async (req, res): Promise<void> => {
+router.get("/appointments", requireAuth, async (req, res): Promise<void> => {
   if (!req.user) {
     res.status(401).json({ error: "Unauthorized" });
     return;
@@ -139,7 +132,7 @@ router.get("/appointments/:appointmentId", requireAuth, async (req, res): Promis
   res.json({ ...appointment, token: token ?? null });
 });
 
-router.patch("/appointments/:appointmentId", requireAuth, requireActiveSubscription, async (req, res): Promise<void> => {
+router.patch("/appointments/:appointmentId", requireAuth, async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.appointmentId) ? req.params.appointmentId[0] : req.params.appointmentId;
   const appointmentId = parseInt(raw, 10);
 

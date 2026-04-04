@@ -5,10 +5,11 @@
  * Clinic Digital Growth SaaS Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { VerifyPaymentBodyPlan } from "./verifyPaymentBodyPlan";
 
 export interface VerifyPaymentBody {
   razorpayOrderId: string;
   razorpayPaymentId: string;
   razorpaySignature: string;
-  internalPaymentId: number;
+  plan: VerifyPaymentBodyPlan;
 }

@@ -93,13 +93,8 @@ export const GetMeResponse = zod.object({
 export const ListPublicClinicsResponseItem = zod.object({
   id: zod.number(),
   name: zod.string(),
-  slug: zod.string(),
-  phone: zod.string(),
   city: zod.string().nullish(),
-  state: zod.string().nullish(),
   address: zod.string().nullish(),
-  whatsappNumber: zod.string().nullish(),
-  googleMapsUrl: zod.string().nullish(),
 });
 export const ListPublicClinicsResponse = zod.array(
   ListPublicClinicsResponseItem,
@@ -697,7 +692,6 @@ export const CreatePaymentOrderResponse = zod.object({
   currency: zod.string(),
   plan: zod.string(),
   keyId: zod.string(),
-  internalPaymentId: zod.number(),
 });
 
 /**
@@ -707,7 +701,7 @@ export const VerifyPaymentBody = zod.object({
   razorpayOrderId: zod.string(),
   razorpayPaymentId: zod.string(),
   razorpaySignature: zod.string(),
-  internalPaymentId: zod.number(),
+  plan: zod.enum(["monthly", "quarterly", "yearly"]),
 });
 
 export const VerifyPaymentResponse = zod.object({

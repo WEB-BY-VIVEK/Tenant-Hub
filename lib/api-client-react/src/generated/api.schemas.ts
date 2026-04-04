@@ -62,18 +62,10 @@ export interface AuthResponse {
 export interface PublicClinic {
   id: number;
   name: string;
-  slug: string;
-  phone: string;
   /** @nullable */
   city?: string | null;
   /** @nullable */
-  state?: string | null;
-  /** @nullable */
   address?: string | null;
-  /** @nullable */
-  whatsappNumber?: string | null;
-  /** @nullable */
-  googleMapsUrl?: string | null;
 }
 
 export interface Clinic {
@@ -394,14 +386,22 @@ export interface RazorpayOrder {
   currency: string;
   plan: string;
   keyId: string;
-  internalPaymentId: number;
 }
+
+export type VerifyPaymentBodyPlan =
+  (typeof VerifyPaymentBodyPlan)[keyof typeof VerifyPaymentBodyPlan];
+
+export const VerifyPaymentBodyPlan = {
+  monthly: "monthly",
+  quarterly: "quarterly",
+  yearly: "yearly",
+} as const;
 
 export interface VerifyPaymentBody {
   razorpayOrderId: string;
   razorpayPaymentId: string;
   razorpaySignature: string;
-  internalPaymentId: number;
+  plan: VerifyPaymentBodyPlan;
 }
 
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];

@@ -26,14 +26,7 @@ app.use(
   }),
 );
 app.use(cors());
-
-app.use((req, _res, next) => {
-  if (req.path === "/api/payments/webhook") {
-    express.raw({ type: "application/json" })(req, _res, next);
-  } else {
-    express.json()(req, _res, next);
-  }
-});
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);

@@ -2,11 +2,10 @@ import { Router, type IRouter } from "express";
 import { eq, and, sql, gte, desc } from "drizzle-orm";
 import { db, appointmentsTable, tokensTable, subscriptionsTable, clinicsTable, paymentsTable } from "@workspace/db";
 import { requireAuth, requireRole } from "../middlewares/auth";
-import { requireActiveSubscription } from "../middlewares/subscription";
 
 const router: IRouter = Router();
 
-router.get("/dashboard/today", requireAuth, requireActiveSubscription, async (req, res): Promise<void> => {
+router.get("/dashboard/today", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
     res.status(403).json({ error: "No clinic associated with your account" });
     return;
@@ -59,7 +58,7 @@ router.get("/dashboard/today", requireAuth, requireActiveSubscription, async (re
   });
 });
 
-router.get("/dashboard/queue-summary", requireAuth, requireActiveSubscription, async (req, res): Promise<void> => {
+router.get("/dashboard/queue-summary", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
     res.status(403).json({ error: "No clinic associated with your account" });
     return;
@@ -92,7 +91,7 @@ router.get("/dashboard/queue-summary", requireAuth, requireActiveSubscription, a
   });
 });
 
-router.get("/dashboard/weekly-stats", requireAuth, requireActiveSubscription, async (req, res): Promise<void> => {
+router.get("/dashboard/weekly-stats", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
     res.status(403).json({ error: "No clinic associated with your account" });
     return;
@@ -120,7 +119,7 @@ router.get("/dashboard/weekly-stats", requireAuth, requireActiveSubscription, as
   res.json(result);
 });
 
-router.get("/dashboard/patient-stats", requireAuth, requireActiveSubscription, async (req, res): Promise<void> => {
+router.get("/dashboard/patient-stats", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
     res.status(403).json({ error: "No clinic associated with your account" });
     return;
