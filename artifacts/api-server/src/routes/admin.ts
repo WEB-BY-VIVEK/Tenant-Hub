@@ -138,6 +138,7 @@ router.patch("/admin/admin-users/:id/toggle-status", requireAuth, requireRole("s
 
   const [existing] = await db.select().from(usersTable).where(eq(usersTable.id, id));
   if (!existing) { res.status(404).json({ error: "Admin not found" }); return; }
+  if (existing.role !== "super_admin") { res.status(400).json({ error: "Can only toggle status of admin accounts" }); return; }
 
   const newStatus = existing.isActive === "active" ? "inactive" : "active";
   await db.update(usersTable).set({ isActive: newStatus }).where(eq(usersTable.id, id));

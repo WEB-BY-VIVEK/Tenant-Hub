@@ -10,6 +10,8 @@ import { format } from "date-fns";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+
 interface Inquiry {
   id: number;
   name: string;
@@ -22,7 +24,7 @@ interface Inquiry {
 
 async function fetchInquiries(): Promise<Inquiry[]> {
   const token = localStorage.getItem("cdg_token");
-  const res = await fetch("/api/admin/inquiries", {
+  const res = await fetch(`${API_BASE}/api/admin/inquiries`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("Failed to fetch inquiries");
@@ -31,7 +33,7 @@ async function fetchInquiries(): Promise<Inquiry[]> {
 
 async function updateStatus(id: number, status: string): Promise<Inquiry> {
   const token = localStorage.getItem("cdg_token");
-  const res = await fetch(`/api/admin/inquiries/${id}/status`, {
+  const res = await fetch(`${API_BASE}/api/admin/inquiries/${id}/status`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ status }),
