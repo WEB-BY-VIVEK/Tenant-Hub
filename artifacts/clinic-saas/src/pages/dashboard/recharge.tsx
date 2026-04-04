@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGetCurrentSubscription, useListInvoices, useListPayments, useCreatePaymentOrder, CreateOrderBodyPlan, verifyPayment, VerifyPaymentBodyPlan } from "@workspace/api-client-react";
+import { useGetCurrentSubscription, useListInvoices, useListPayments, useCreatePaymentOrder, CreateOrderBodyPlan, verifyPayment } from "@workspace/api-client-react";
 import { getGetCurrentSubscriptionQueryKey, getListInvoicesQueryKey, getListPaymentsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ export default function Recharge() {
                     razorpayOrderId: response.razorpay_order_id,
                     razorpayPaymentId: response.razorpay_payment_id,
                     razorpaySignature: response.razorpay_signature,
-                    plan: plan as VerifyPaymentBodyPlan,
+                    internalPaymentId: data.internalPaymentId,
                   });
                   toast({ title: "Payment successful!", description: "Your subscription has been activated." });
                   queryClient.invalidateQueries({ queryKey: getGetCurrentSubscriptionQueryKey() });

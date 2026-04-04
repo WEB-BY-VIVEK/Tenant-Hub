@@ -692,6 +692,7 @@ export const CreatePaymentOrderResponse = zod.object({
   currency: zod.string(),
   plan: zod.string(),
   keyId: zod.string(),
+  internalPaymentId: zod.number(),
 });
 
 /**
@@ -701,7 +702,7 @@ export const VerifyPaymentBody = zod.object({
   razorpayOrderId: zod.string(),
   razorpayPaymentId: zod.string(),
   razorpaySignature: zod.string(),
-  plan: zod.enum(["monthly", "quarterly", "yearly"]),
+  internalPaymentId: zod.number(),
 });
 
 export const VerifyPaymentResponse = zod.object({

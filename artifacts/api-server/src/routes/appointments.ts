@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { db, appointmentsTable, tokensTable, clinicsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
+import { requireActiveSubscription } from "../middlewares/subscription";
 import type { appointmentStatusEnum } from "@workspace/db";
 
 type AppointmentStatus = typeof appointmentStatusEnum.enumValues[number];
@@ -132,7 +133,7 @@ router.get("/appointments/:appointmentId", requireAuth, async (req, res): Promis
   res.json({ ...appointment, token: token ?? null });
 });
 
-router.patch("/appointments/:appointmentId", requireAuth, async (req, res): Promise<void> => {
+router.patch("/appointments/:appointmentId", requireAuth, requireActiveSubscription, async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.appointmentId) ? req.params.appointmentId[0] : req.params.appointmentId;
   const appointmentId = parseInt(raw, 10);
 

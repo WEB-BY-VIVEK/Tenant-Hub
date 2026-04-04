@@ -59,5 +59,4 @@ export * from "./upgradeSubscriptionBodyPlan";
 export * from "./userProfile";
 export * from "./userProfileRole";
 export * from "./verifyPaymentBody";
-export * from "./verifyPaymentBodyPlan";
 export * from "./weeklyStatPoint";

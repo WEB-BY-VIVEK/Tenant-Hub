@@ -386,22 +386,14 @@ export interface RazorpayOrder {
   currency: string;
   plan: string;
   keyId: string;
+  internalPaymentId: number;
 }
-
-export type VerifyPaymentBodyPlan =
-  (typeof VerifyPaymentBodyPlan)[keyof typeof VerifyPaymentBodyPlan];
-
-export const VerifyPaymentBodyPlan = {
-  monthly: "monthly",
-  quarterly: "quarterly",
-  yearly: "yearly",
-} as const;
 
 export interface VerifyPaymentBody {
   razorpayOrderId: string;
   razorpayPaymentId: string;
   razorpaySignature: string;
-  plan: VerifyPaymentBodyPlan;
+  internalPaymentId: number;
 }
 
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];

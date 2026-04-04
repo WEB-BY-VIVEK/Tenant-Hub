@@ -1502,12 +1502,15 @@ components:
           type: string
         keyId:
           type: string
+        internalPaymentId:
+          type: integer
       required:
         - orderId
         - amount
         - currency
         - plan
         - keyId
+        - internalPaymentId
 
     VerifyPaymentBody:
       type: object
@@ -1518,14 +1521,13 @@ components:
           type: string
         razorpaySignature:
           type: string
-        plan:
-          type: string
-          enum: [monthly, quarterly, yearly]
+        internalPaymentId:
+          type: integer
       required:
         - razorpayOrderId
         - razorpayPaymentId
         - razorpaySignature
-        - plan
+        - internalPaymentId
 
     PaymentVerificationResponse:
       type: object

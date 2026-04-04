@@ -156,19 +156,52 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
     return;
   }
 
-  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, plan, internalPaymentId } = req.body;
+  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, internalPaymentId } = req.body;
 
-  if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature || !plan) {
-    res.status(400).json({ error: "Missing required payment verification fields" });
+  if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature || !internalPaymentId) {
+    res.status(400).json({ error: "Missing required payment verification fields: razorpayOrderId, razorpayPaymentId, razorpaySignature, internalPaymentId" });
     return;
   }
 
-  if (!VALID_PLANS.includes(plan)) {
-    res.status(400).json({ error: "Invalid plan" });
+  const clinicId = req.user.clinicId;
+
+  const [pendingRow] = await db
+    .select()
+    .from(paymentsTable)
+    .where(and(eq(paymentsTable.id, internalPaymentId), eq(paymentsTable.clinicId, clinicId)))
+    .limit(1);
+
+  if (!pendingRow) {
+    res.status(404).json({ error: "Payment order not found" });
     return;
   }
 
-  const typedPlan: SubscriptionPlan = plan as SubscriptionPlan;
+  if (pendingRow.razorpayOrderId !== razorpayOrderId) {
+    res.status(400).json({ error: "Order ID mismatch" });
+    return;
+  }
+
+  if (pendingRow.status === "success") {
+    const [existingInvoice] = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.paymentId, pendingRow.id))
+      .limit(1);
+    res.json({ success: true, payment: pendingRow, invoice: existingInvoice });
+    return;
+  }
+
+  const [existingByPaymentId] = await db
+    .select()
+    .from(paymentsTable)
+    .where(eq(paymentsTable.razorpayPaymentId, razorpayPaymentId))
+    .limit(1);
+
+  if (existingByPaymentId && existingByPaymentId.id !== pendingRow.id && existingByPaymentId.status === "success") {
+    res.status(409).json({ error: "This payment has already been processed" });
+    return;
+  }
+
   const keySecret = process.env.RAZORPAY_SECRET;
   if (!keySecret) {
     res.status(503).json({ error: "Payment gateway not configured. Set RAZORPAY_SECRET." });
@@ -185,67 +218,19 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
     return;
   }
 
-  const clinicId = req.user.clinicId;
-  const amountInr = PLAN_AMOUNTS_INR[typedPlan];
+  const description = pendingRow.description ?? "monthly subscription";
+  const rawPlan = description.split(" ")[0].toLowerCase();
+  const typedPlan: SubscriptionPlan = VALID_PLANS.includes(rawPlan as SubscriptionPlan)
+    ? (rawPlan as SubscriptionPlan)
+    : "monthly";
 
-  const [existingByPaymentId] = await db
-    .select()
-    .from(paymentsTable)
-    .where(eq(paymentsTable.razorpayPaymentId, razorpayPaymentId))
-    .limit(1);
+  await db.update(paymentsTable)
+    .set({ razorpayPaymentId, razorpaySignature })
+    .where(eq(paymentsTable.id, pendingRow.id));
 
-  if (existingByPaymentId?.status === "success") {
-    const [existingInvoice] = await db
-      .select()
-      .from(invoicesTable)
-      .where(eq(invoicesTable.paymentId, existingByPaymentId.id))
-      .limit(1);
-    res.json({ success: true, payment: existingByPaymentId, invoice: existingInvoice });
-    return;
-  }
+  const { subscription, invoice } = await activateSubscription(clinicId, typedPlan, pendingRow.amount, pendingRow.id);
 
-  let paymentRowId: number;
-
-  if (internalPaymentId) {
-    const [pendingRow] = await db
-      .select()
-      .from(paymentsTable)
-      .where(and(eq(paymentsTable.id, internalPaymentId), eq(paymentsTable.clinicId, clinicId)))
-      .limit(1);
-
-    if (pendingRow) {
-      await db.update(paymentsTable)
-        .set({ razorpayPaymentId, razorpaySignature, status: "pending" })
-        .where(eq(paymentsTable.id, pendingRow.id));
-      paymentRowId = pendingRow.id;
-    } else {
-      const [newRow] = await db.insert(paymentsTable).values({
-        clinicId,
-        razorpayOrderId,
-        razorpayPaymentId,
-        razorpaySignature,
-        amount: amountInr,
-        currency: "INR",
-        status: "pending",
-      }).returning();
-      paymentRowId = newRow.id;
-    }
-  } else {
-    const [newRow] = await db.insert(paymentsTable).values({
-      clinicId,
-      razorpayOrderId,
-      razorpayPaymentId,
-      razorpaySignature,
-      amount: amountInr,
-      currency: "INR",
-      status: "pending",
-    }).returning();
-    paymentRowId = newRow.id;
-  }
-
-  const { subscription, invoice } = await activateSubscription(clinicId, typedPlan, amountInr, paymentRowId);
-
-  const [finalPayment] = await db.select().from(paymentsTable).where(eq(paymentsTable.id, paymentRowId)).limit(1);
+  const [finalPayment] = await db.select().from(paymentsTable).where(eq(paymentsTable.id, pendingRow.id)).limit(1);
 
   res.json({ success: true, payment: finalPayment, subscription, invoice });
 });
