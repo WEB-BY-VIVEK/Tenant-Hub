@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
-import { eq, desc, and, gt } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { db, paymentsTable, subscriptionsTable, invoicesTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
 import { logger } from "../lib/logger";
@@ -38,6 +38,56 @@ function generateInvoiceNumber(): string {
   return `INV-${year}${month}-${rand}`;
 }
 
+async function activateSubscription(
+  clinicId: number,
+  plan: SubscriptionPlan,
+  amountInr: number,
+  paymentId: number
+) {
+  const now = new Date();
+  const months = PLAN_MONTHS[plan];
+
+  const [existingActive] = await db
+    .select()
+    .from(subscriptionsTable)
+    .where(and(eq(subscriptionsTable.clinicId, clinicId), eq(subscriptionsTable.status, "active")))
+    .orderBy(desc(subscriptionsTable.endDate))
+    .limit(1);
+
+  const baseDate = existingActive?.endDate && existingActive.endDate > now
+    ? new Date(existingActive.endDate)
+    : now;
+
+  const endDate = new Date(baseDate);
+  endDate.setMonth(endDate.getMonth() + months);
+
+  const [subscription] = await db.insert(subscriptionsTable).values({
+    clinicId,
+    plan,
+    status: "active",
+    startDate: now,
+    endDate,
+    amount: amountInr,
+  }).returning();
+
+  await db.update(paymentsTable)
+    .set({ subscriptionId: subscription.id, status: "success" })
+    .where(eq(paymentsTable.id, paymentId));
+
+  const [invoice] = await db.insert(invoicesTable).values({
+    invoiceNumber: generateInvoiceNumber(),
+    clinicId,
+    paymentId,
+    subscriptionId: subscription.id,
+    amount: amountInr,
+    currency: "INR",
+    description: `${plan} subscription recharge`,
+    issuedAt: now,
+  }).returning();
+
+  return { subscription, invoice };
+}
+
 router.post("/payments/create-order", requireAuth, async (req, res): Promise<void> => {
   if (!req.user?.clinicId) {
     res.status(403).json({ error: "No clinic associated with your account" });
@@ -59,22 +109,40 @@ router.post("/payments/create-order", requireAuth, async (req, res): Promise<voi
     return;
   }
 
+  const clinicId = req.user.clinicId;
+  const amountPaise = PLAN_AMOUNTS_PAISE[typedPlan];
+  const amountInr = PLAN_AMOUNTS_INR[typedPlan];
+
   try {
     const Razorpay = (await import("razorpay")).default;
     const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
 
     const order = await razorpay.orders.create({
-      amount: PLAN_AMOUNTS_PAISE[typedPlan],
+      amount: amountPaise,
       currency: "INR",
-      receipt: `rcpt_${req.user.clinicId}_${Date.now()}`,
+      receipt: `rcpt_${clinicId}_${Date.now()}`,
+      notes: {
+        clinic_id: String(clinicId),
+        plan: typedPlan,
+      },
     });
+
+    const [pendingPayment] = await db.insert(paymentsTable).values({
+      clinicId,
+      razorpayOrderId: order.id,
+      amount: amountInr,
+      currency: "INR",
+      status: "pending",
+      description: `${typedPlan} subscription`,
+    }).returning();
 
     res.json({
       orderId: order.id,
-      amount: PLAN_AMOUNTS_PAISE[typedPlan],
+      amount: amountPaise,
       currency: "INR",
       plan: typedPlan,
       keyId,
+      internalPaymentId: pendingPayment.id,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to create Razorpay order");
@@ -88,7 +156,7 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
     return;
   }
 
-  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, plan } = req.body;
+  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, plan, internalPaymentId } = req.body;
 
   if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature || !plan) {
     res.status(400).json({ error: "Missing required payment verification fields" });
@@ -119,56 +187,67 @@ router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => 
 
   const clinicId = req.user.clinicId;
   const amountInr = PLAN_AMOUNTS_INR[typedPlan];
-  const months = PLAN_MONTHS[typedPlan];
 
-  const now = new Date();
-
-  const [existingActive] = await db
+  const [existingByPaymentId] = await db
     .select()
-    .from(subscriptionsTable)
-    .where(and(eq(subscriptionsTable.clinicId, clinicId), eq(subscriptionsTable.status, "active")))
-    .orderBy(desc(subscriptionsTable.endDate))
+    .from(paymentsTable)
+    .where(eq(paymentsTable.razorpayPaymentId, razorpayPaymentId))
     .limit(1);
 
-  const baseDate = existingActive && existingActive.endDate && existingActive.endDate > now
-    ? new Date(existingActive.endDate)
-    : now;
+  if (existingByPaymentId?.status === "success") {
+    const [existingInvoice] = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.paymentId, existingByPaymentId.id))
+      .limit(1);
+    res.json({ success: true, payment: existingByPaymentId, invoice: existingInvoice });
+    return;
+  }
 
-  const endDate = new Date(baseDate);
-  endDate.setMonth(endDate.getMonth() + months);
+  let paymentRowId: number;
 
-  const [subscription] = await db.insert(subscriptionsTable).values({
-    clinicId,
-    plan: typedPlan,
-    status: "active",
-    startDate: now,
-    endDate,
-    amount: amountInr,
-  }).returning();
+  if (internalPaymentId) {
+    const [pendingRow] = await db
+      .select()
+      .from(paymentsTable)
+      .where(and(eq(paymentsTable.id, internalPaymentId), eq(paymentsTable.clinicId, clinicId)))
+      .limit(1);
 
-  const [payment] = await db.insert(paymentsTable).values({
-    clinicId,
-    subscriptionId: subscription.id,
-    razorpayOrderId,
-    razorpayPaymentId,
-    razorpaySignature,
-    amount: amountInr,
-    currency: "INR",
-    status: "success",
-  }).returning();
+    if (pendingRow) {
+      await db.update(paymentsTable)
+        .set({ razorpayPaymentId, razorpaySignature, status: "pending" })
+        .where(eq(paymentsTable.id, pendingRow.id));
+      paymentRowId = pendingRow.id;
+    } else {
+      const [newRow] = await db.insert(paymentsTable).values({
+        clinicId,
+        razorpayOrderId,
+        razorpayPaymentId,
+        razorpaySignature,
+        amount: amountInr,
+        currency: "INR",
+        status: "pending",
+      }).returning();
+      paymentRowId = newRow.id;
+    }
+  } else {
+    const [newRow] = await db.insert(paymentsTable).values({
+      clinicId,
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+      amount: amountInr,
+      currency: "INR",
+      status: "pending",
+    }).returning();
+    paymentRowId = newRow.id;
+  }
 
-  const [invoice] = await db.insert(invoicesTable).values({
-    invoiceNumber: generateInvoiceNumber(),
-    clinicId,
-    paymentId: payment.id,
-    subscriptionId: subscription.id,
-    amount: amountInr,
-    currency: "INR",
-    description: `${typedPlan} subscription recharge`,
-    issuedAt: now,
-  }).returning();
+  const { subscription, invoice } = await activateSubscription(clinicId, typedPlan, amountInr, paymentRowId);
 
-  res.json({ success: true, payment, subscription, invoice });
+  const [finalPayment] = await db.select().from(paymentsTable).where(eq(paymentsTable.id, paymentRowId)).limit(1);
+
+  res.json({ success: true, payment: finalPayment, subscription, invoice });
 });
 
 router.post("/payments/webhook", async (req, res): Promise<void> => {
@@ -203,98 +282,81 @@ router.post("/payments/webhook", async (req, res): Promise<void> => {
   logger.info({ event }, "Razorpay webhook received");
 
   if (event === "payment.failed") {
-    const paymentId = (payload?.payload as Record<string, unknown>)?.payment?.entity?.id as string | undefined;
-    if (paymentId) {
+    const entity = (payload?.payload as Record<string, unknown>)?.payment?.entity as Record<string, unknown> | undefined;
+    const razorpayPaymentId = entity?.id as string | undefined;
+    const failureReason = entity?.error_description as string | undefined;
+    if (razorpayPaymentId) {
       await db.update(paymentsTable)
-        .set({ status: "failed" })
-        .where(eq(paymentsTable.razorpayPaymentId, paymentId));
+        .set({ status: "failed", failureReason: failureReason ?? null })
+        .where(eq(paymentsTable.razorpayPaymentId, razorpayPaymentId));
     }
   }
 
   if (event === "payment.captured") {
     const entity = (payload?.payload as Record<string, unknown>)?.payment?.entity as Record<string, unknown> | undefined;
-    const paymentId = entity?.id as string | undefined;
-    const orderId = entity?.order_id as string | undefined;
-    if (paymentId && orderId) {
+    const razorpayPaymentId = entity?.id as string | undefined;
+    const razorpayOrderId = entity?.order_id as string | undefined;
+    const notes = entity?.notes as Record<string, unknown> | undefined;
+
+    if (razorpayPaymentId && razorpayOrderId) {
       const [existingPayment] = await db
         .select()
         .from(paymentsTable)
-        .where(eq(paymentsTable.razorpayPaymentId, paymentId))
+        .where(eq(paymentsTable.razorpayPaymentId, razorpayPaymentId))
         .limit(1);
 
-      if (existingPayment) {
-        if (existingPayment.status === "pending") {
-          await db.update(paymentsTable)
-            .set({ status: "success" })
-            .where(eq(paymentsTable.razorpayPaymentId, paymentId));
+      if (existingPayment?.status === "success") {
+        res.json({ status: "ok" });
+        return;
+      }
 
-          if (existingPayment.subscriptionId) {
-            await db.update(subscriptionsTable)
-              .set({ status: "active" })
-              .where(eq(subscriptionsTable.id, existingPayment.subscriptionId));
-          }
-        }
+      if (existingPayment) {
+        const clinicId = existingPayment.clinicId;
+        const amountInr = existingPayment.amount;
+        const rawPlan = (notes?.plan ?? "monthly") as string;
+        const plan: SubscriptionPlan = VALID_PLANS.includes(rawPlan as SubscriptionPlan)
+          ? (rawPlan as SubscriptionPlan)
+          : "monthly";
+
+        await db.update(paymentsTable)
+          .set({ razorpayPaymentId, status: "pending" })
+          .where(eq(paymentsTable.id, existingPayment.id));
+
+        await activateSubscription(clinicId, plan, amountInr, existingPayment.id);
       } else {
-        const clinicIdFromPayment = entity?.notes?.clinic_id
-          ? parseInt(String(entity.notes.clinic_id))
-          : null;
+        const rawClinicId = notes?.clinic_id ? parseInt(String(notes.clinic_id)) : null;
         const amountPaise = entity?.amount as number | undefined;
         const amountInr = amountPaise ? Math.round(amountPaise / 100) : 0;
+        const rawPlan = (notes?.plan ?? "monthly") as string;
+        const plan: SubscriptionPlan = VALID_PLANS.includes(rawPlan as SubscriptionPlan)
+          ? (rawPlan as SubscriptionPlan)
+          : "monthly";
 
-        if (clinicIdFromPayment && amountInr > 0) {
-          const now = new Date();
+        if (rawClinicId && amountInr > 0) {
           const [newPayment] = await db.insert(paymentsTable).values({
-            clinicId: clinicIdFromPayment,
-            razorpayOrderId: orderId,
-            razorpayPaymentId: paymentId,
+            clinicId: rawClinicId,
+            razorpayOrderId,
+            razorpayPaymentId,
             amount: amountInr,
             currency: "INR",
-            status: "success",
+            status: "pending",
           }).returning();
 
-          const [existingActive] = await db
-            .select()
-            .from(subscriptionsTable)
-            .where(and(eq(subscriptionsTable.clinicId, clinicIdFromPayment), eq(subscriptionsTable.status, "active")))
-            .orderBy(desc(subscriptionsTable.endDate))
-            .limit(1);
-
-          const baseDate = existingActive?.endDate && existingActive.endDate > now
-            ? new Date(existingActive.endDate)
-            : now;
-          const endDate = new Date(baseDate);
-          endDate.setMonth(endDate.getMonth() + 1);
-
-          const [sub] = await db.insert(subscriptionsTable).values({
-            clinicId: clinicIdFromPayment,
-            plan: "monthly",
-            status: "active",
-            startDate: now,
-            endDate,
-            amount: amountInr,
-          }).returning();
-
-          await db.insert(invoicesTable).values({
-            invoiceNumber: generateInvoiceNumber(),
-            clinicId: clinicIdFromPayment,
-            paymentId: newPayment.id,
-            subscriptionId: sub.id,
-            amount: amountInr,
-            currency: "INR",
-            description: "subscription recharge (webhook)",
-            issuedAt: now,
-          });
+          await activateSubscription(rawClinicId, plan, amountInr, newPayment.id);
+        } else {
+          logger.warn({ event, razorpayOrderId }, "payment.captured: missing clinic_id/plan in notes, skipping");
         }
       }
     }
   }
 
   if (event === "refund.created") {
-    const paymentId = (payload?.payload as Record<string, unknown>)?.refund?.entity?.payment_id as string | undefined;
-    if (paymentId) {
+    const entity = (payload?.payload as Record<string, unknown>)?.refund?.entity as Record<string, unknown> | undefined;
+    const razorpayPaymentId = entity?.payment_id as string | undefined;
+    if (razorpayPaymentId) {
       await db.update(paymentsTable)
         .set({ status: "refunded" })
-        .where(eq(paymentsTable.razorpayPaymentId, paymentId));
+        .where(eq(paymentsTable.razorpayPaymentId, razorpayPaymentId));
     }
   }
 
