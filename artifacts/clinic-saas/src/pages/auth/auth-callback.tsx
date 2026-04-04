@@ -17,9 +17,6 @@ export default function AuthCallback() {
   useEffect(() => {
     const exchangeToken = async () => {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const role = params.get("role") || "doctor";
-
         await new Promise((res) => setTimeout(res, 800));
 
         const session = await getSupabaseSession();
@@ -35,7 +32,6 @@ export default function AuthCallback() {
             accessToken: session.access_token,
             email: session.user.email,
             name: session.user.user_metadata?.full_name || session.user.email?.split("@")[0],
-            role,
           }),
         });
 

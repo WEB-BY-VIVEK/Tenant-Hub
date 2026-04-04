@@ -299,7 +299,7 @@ router.post("/auth/reset-password", async (req, res) => {
 });
 
 router.post("/auth/google-signin", async (req, res) => {
-  const { accessToken, email: googleEmail, name: googleName, role } = req.body;
+  const { accessToken, email: googleEmail, name: googleName } = req.body;
   if (!accessToken || !googleEmail) {
     res.status(400).json({ error: "Access token and email are required." });
     return;
@@ -329,14 +329,13 @@ router.post("/auth/google-signin", async (req, res) => {
     }
     let [user] = await db.select().from(usersTable).where(eq(usersTable.email, verifiedEmail));
     if (!user) {
-      const targetRole = role === "super_admin" ? "super_admin" : "doctor";
       const randomPwdHash = await bcrypt.hash(Math.random().toString(36), 10);
       const [newUser] = await db.insert(usersTable).values({
         email: verifiedEmail,
         passwordHash: randomPwdHash,
         name: googleName || verifiedEmail.split("@")[0],
         phone: supabaseUser.phone || "google-oauth",
-        role: targetRole,
+        role: "doctor",
       }).returning();
       user = newUser;
     }

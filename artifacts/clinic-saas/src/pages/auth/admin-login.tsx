@@ -107,7 +107,7 @@ export default function AdminLogin() {
     }
     setGoogleLoading(true);
     try {
-      await signInWithGoogle(`${window.location.origin}/auth/callback?role=super_admin`);
+      await signInWithGoogle(`${window.location.origin}/auth/callback`);
     } catch {
       toast({ variant: "destructive", title: "Google sign-in failed", description: "Please try again." });
       setGoogleLoading(false);
