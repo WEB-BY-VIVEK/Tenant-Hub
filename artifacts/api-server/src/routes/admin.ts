@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, sql, desc, and, gte, lte } from "drizzle-orm";
 import { db, clinicsTable, usersTable, appointmentsTable, subscriptionsTable, paymentsTable } from "@workspace/db";
 import { requireAuth, requireRole } from "../middlewares/auth";
+import bcrypt from "bcryptjs";
 
 const router: IRouter = Router();
 
@@ -152,6 +153,27 @@ router.patch("/admin/admin-users/:id/toggle-status", requireAuth, requireRole("s
   await db.update(usersTable).set({ isActive: newStatus }).where(eq(usersTable.id, id));
 
   res.json({ success: true, isActive: newStatus });
+});
+
+router.patch("/admin/doctors/:doctorId/set-password", requireAuth, requireRole("super_admin"), async (req, res): Promise<void> => {
+  const doctorId = parseInt(req.params.doctorId, 10);
+  const { password } = req.body;
+
+  if (!password || typeof password !== "string" || password.length < 6) {
+    res.status(400).json({ error: "Password must be at least 6 characters." });
+    return;
+  }
+
+  const [doctor] = await db.select().from(usersTable).where(and(eq(usersTable.id, doctorId), eq(usersTable.role, "doctor")));
+  if (!doctor) {
+    res.status(404).json({ error: "Doctor not found." });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  await db.update(usersTable).set({ passwordHash }).where(eq(usersTable.id, doctorId));
+
+  res.json({ success: true, message: "Password updated successfully." });
 });
 
 export default router;

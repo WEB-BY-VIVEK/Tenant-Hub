@@ -4,12 +4,112 @@ import { useGetClinic, getGetClinicQueryKey, useListDoctors, getListDoctorsQuery
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ArrowLeft, Mail, Phone, MapPin, Building2, Calendar, Crown, Clock } from "lucide-react";
+import { Loader2, ArrowLeft, Mail, Phone, MapPin, Building2, Calendar, Crown, Clock, KeyRound, Eye, EyeOff, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+
+const TOKEN_KEY = "cdg_token";
+const getToken = () => localStorage.getItem(TOKEN_KEY) ?? "";
+
+function SetPasswordDialog({ doctorId, doctorName }: { doctorId: number; doctorName: string }) {
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
+
+  const handleSetPassword = async () => {
+    if (password.length < 6) {
+      toast({ variant: "destructive", title: "Too short", description: "Password must be at least 6 characters." });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/doctors/${doctorId}/set-password`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ variant: "destructive", title: "Error", description: data.error || "Failed to update password." });
+        return;
+      }
+      toast({ title: "Password updated", description: `New password set for ${doctorName}.` });
+      setPassword("");
+      setOpen(false);
+    } catch {
+      toast({ variant: "destructive", title: "Error", description: "Could not connect to server." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(password);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="gap-1.5">
+          <KeyRound className="h-3.5 w-3.5" />
+          Set Password
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Set Login Password</DialogTitle>
+          <DialogDescription>
+            Set a new password for <span className="font-medium text-foreground">{doctorName}</span>. Share it with them securely.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="new-password">New Password</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  id="new-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Min. 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pr-9"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <Button type="button" size="icon" variant="outline" onClick={handleCopy} disabled={!password} title="Copy password">
+                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setOpen(false); setPassword(""); }}>Cancel</Button>
+          <Button onClick={handleSetPassword} disabled={loading || !password}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Password
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function ClinicDetail() {
   const { clinicId } = useParams();
@@ -242,18 +342,28 @@ export default function ClinicDetail() {
                   ) : doctors && doctors.length > 0 ? (
                     <div className="space-y-4">
                       {doctors.map(doctor => (
-                        <div key={doctor.id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                              {doctor.name.substring(0, 2).toUpperCase()}
+                        <div key={doctor.id} className="border rounded-lg overflow-hidden">
+                          <div className="flex items-center justify-between p-4 bg-muted/20">
+                            <div className="flex items-center gap-4">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                {doctor.name.substring(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="font-medium">{doctor.name}</p>
+                                <p className="text-sm text-muted-foreground">{doctor.specialization || "General Practitioner"}</p>
+                              </div>
+                            </div>
+                            <SetPasswordDialog doctorId={doctor.id} doctorName={doctor.name} />
+                          </div>
+                          <div className="px-4 py-3 border-t bg-blue-50/50 grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Login Email</p>
+                              <p className="text-sm font-mono font-medium text-blue-800">{doctor.email}</p>
                             </div>
                             <div>
-                              <p className="font-medium">{doctor.name}</p>
-                              <p className="text-sm text-muted-foreground">{doctor.specialization || "General Practitioner"}</p>
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Password</p>
+                              <p className="text-sm font-mono text-muted-foreground tracking-widest">••••••••</p>
                             </div>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {doctor.email}
                           </div>
                         </div>
                       ))}
