@@ -35,8 +35,8 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd artifacts/api-server && PORT=3000 pnpm run dev"
-waitForPort = 3000
+args = "cd artifacts/api-server && PORT=8080 pnpm run dev"
+waitForPort = 8080
 
 [agent]
 stack = "PNPM_WORKSPACE"
