@@ -5,11 +5,94 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Clock, CheckCircle2, AlertCircle, PlayCircle, SkipForward, XCircle, Ticket, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+
+function DashboardOverviewSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-56" />
+          <Skeleton className="h-4 w-44" />
+        </div>
+        <Skeleton className="h-7 w-36 rounded-full" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-4 rounded" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16 mb-2" />
+              <Skeleton className="h-3 w-28" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="md:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-9 w-64 rounded-md" />
+            <Skeleton className="h-4 w-10" />
+          </div>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="p-4 border-b bg-muted/30">
+              <Skeleton className="h-5 w-40" />
+            </div>
+            <div className="divide-y">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-8 w-20 rounded-md" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <Skeleton className="h-5 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex justify-between items-center">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-8" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <Skeleton className="h-5 w-28" />
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              <Skeleton className="h-9 w-full rounded-md" />
+              <Skeleton className="h-9 w-full rounded-md" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardOverview() {
   const [activeTab, setActiveTab] = useState("queue");
@@ -59,11 +142,7 @@ export default function DashboardOverview() {
   };
 
   if (loadingDash || loadingSummary || loadingQueue || loadingAppts) {
-    return (
-      <div className="flex h-[50vh] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <DashboardOverviewSkeleton />;
   }
 
   const isSubExpired = dashboard?.subscriptionStatus.isActive === false;

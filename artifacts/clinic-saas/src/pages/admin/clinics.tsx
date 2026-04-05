@@ -6,12 +6,56 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Loader2, Search, MoreHorizontal, Ban, PlayCircle, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { getAdminListClinicsQueryKey } from "@workspace/api-client-react";
+
+function ClinicsTableSkeleton() {
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Clinic Info</TableHead>
+            <TableHead>Subscription</TableHead>
+            <TableHead>Stats</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {[...Array(5)].map((_, i) => (
+            <TableRow key={i}>
+              <TableCell>
+                <Skeleton className="h-4 w-36 mb-1.5" />
+                <Skeleton className="h-3 w-28 mb-1" />
+                <Skeleton className="h-3 w-20" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-5 w-16 rounded-full mb-1.5" />
+                <Skeleton className="h-3 w-20" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-20 mb-1" />
+                <Skeleton className="h-4 w-16" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </TableCell>
+              <TableCell className="text-right">
+                <Skeleton className="h-8 w-8 ml-auto rounded" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
 
 export default function ClinicsList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -74,9 +118,7 @@ export default function ClinicsList() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex py-10 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <ClinicsTableSkeleton />
           ) : (
             <div className="rounded-md border">
               <Table>

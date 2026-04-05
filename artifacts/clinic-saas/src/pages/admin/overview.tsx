@@ -1,7 +1,88 @@
 import { useGetAdminStats, useGetRevenueChart, useGetSubscriptionHealth } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Activity, Building2, CreditCard, Loader2, ArrowUpRight, TrendingUp } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, LineChart } from "recharts";
+
+function AdminOverviewSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-9 w-56" />
+        <Skeleton className="h-4 w-96" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-4 rounded" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-24 mb-2" />
+              <Skeleton className="h-3 w-36" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-7">
+        <Card className="md:col-span-4">
+          <CardHeader>
+            <Skeleton className="h-5 w-40 mb-1" />
+            <Skeleton className="h-4 w-72" />
+          </CardHeader>
+          <CardContent className="h-[300px] flex items-end gap-2 pb-4 px-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="flex-1 flex flex-col gap-1 items-center justify-end h-full">
+                <Skeleton className="w-full rounded" style={{ height: `${25 + Math.random() * 65}%` }} />
+                <Skeleton className="h-3 w-8 mt-1" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-3">
+          <CardHeader>
+            <Skeleton className="h-5 w-44 mb-1" />
+            <Skeleton className="h-4 w-52" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-3 w-3 rounded-full" />
+                    <Skeleton className="h-4 w-36" />
+                  </div>
+                  <Skeleton className="h-4 w-8" />
+                </div>
+              ))}
+            </div>
+            <div className="pt-4 border-t">
+              <Skeleton className="h-4 w-36 mb-3" />
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-3 w-28" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminOverview() {
   const { data: stats, isLoading: loadingStats } = useGetAdminStats();
@@ -9,11 +90,7 @@ export default function AdminOverview() {
   const { data: subHealth, isLoading: loadingHealth } = useGetSubscriptionHealth();
 
   if (loadingStats || loadingRev || loadingHealth) {
-    return (
-      <div className="flex h-[50vh] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AdminOverviewSkeleton />;
   }
 
   const formatCurrency = (amount: number) => {

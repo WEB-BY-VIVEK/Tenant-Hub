@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,6 +15,47 @@ import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
+function AppointmentsTableSkeleton() {
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Patient Details</TableHead>
+            <TableHead>Date &amp; Time</TableHead>
+            <TableHead>Reason</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {[...Array(6)].map((_, i) => (
+            <TableRow key={i}>
+              <TableCell>
+                <Skeleton className="h-4 w-32 mb-1.5" />
+                <Skeleton className="h-3 w-24" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-24 mb-1.5" />
+                <Skeleton className="h-3 w-16" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-36" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </TableCell>
+              <TableCell className="text-right">
+                <Skeleton className="h-8 w-32 ml-auto rounded-md" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
 
 export default function Appointments() {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -128,9 +170,7 @@ export default function Appointments() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex py-10 items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <AppointmentsTableSkeleton />
           ) : (
             <div className="rounded-md border">
               <Table>

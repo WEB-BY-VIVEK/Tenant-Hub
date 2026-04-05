@@ -1,9 +1,74 @@
 import { useGetWeeklyStats, useGetPatientStats, useGetSubscriptionHistory } from "@workspace/api-client-react";
 import { getGetWeeklyStatsQueryKey, getGetPatientStatsQueryKey, getGetSubscriptionHistoryQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts";
 import { Users, UserPlus, Repeat, Activity, Loader2, Calendar, Crown } from "lucide-react";
 import { format } from "date-fns";
+
+function AnalyticsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-4 w-80" />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-4 rounded" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16 mb-2" />
+              <Skeleton className="h-3 w-32" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-7">
+        <Card className="md:col-span-5">
+          <CardHeader>
+            <Skeleton className="h-5 w-44 mb-1" />
+            <Skeleton className="h-4 w-72" />
+          </CardHeader>
+          <CardContent className="h-[350px] flex flex-col justify-end gap-2 pb-4 px-4">
+            <div className="flex items-end gap-3 h-[280px] w-full">
+              {[...Array(7)].map((_, i) => (
+                <div key={i} className="flex-1 flex flex-col gap-1 items-center justify-end h-full">
+                  <Skeleton className="w-full rounded" style={{ height: `${30 + Math.random() * 60}%` }} />
+                  <Skeleton className="h-3 w-6 mt-1" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <Skeleton className="h-5 w-40 mb-1" />
+            <Skeleton className="h-4 w-28" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-start gap-4 pb-4 border-b last:border-0 last:pb-0">
+                <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+                <div className="space-y-1.5 flex-1">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-4 w-14 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
 export default function Analytics() {
   const { data: weeklyStats, isLoading: loadingWeekly } = useGetWeeklyStats({ query: { queryKey: getGetWeeklyStatsQueryKey() } });
@@ -11,11 +76,7 @@ export default function Analytics() {
   const { data: subHistory, isLoading: loadingHistory } = useGetSubscriptionHistory({ query: { queryKey: getGetSubscriptionHistoryQueryKey() } });
 
   if (loadingWeekly || loadingPatients || loadingHistory) {
-    return (
-      <div className="flex h-[50vh] w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   // Format data for chart
